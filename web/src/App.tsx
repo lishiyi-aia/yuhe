@@ -26,22 +26,20 @@ type Lang = 'en' | 'zh'
 const COPY = {
   en: {
     title: 'About Shiyi',
-    target: 'Applying to Yuhe Technology · Marketing Operations',
     paragraphs: [
-      "Shiyi Li · 2027 Master of Marketing candidate. I turn AI product features and user questions into clear content, support visual and video production, and use AI-assisted analysis to improve the next publishing cycle.",
+      "Shiyi Li · Applying to Yuhe Technology for Marketing Operations. A 2027 Master of Marketing candidate with working English and experience in AI product content, WeChat account development, visual and video production, and communication reviews. I use AI-assisted content, dashboards and reusable templates to inform the next publishing cycle.",
     ],
   },
   zh: {
     title: 'About Shiyi',
-    target: '应聘语核科技｜市场运营岗',
     paragraphs: [
-      '李世怡｜2027届市场营销硕士。把AI产品功能与用户问题转化为易理解的内容，参与图文视频制作与社媒传播，运用AI看板和内容复盘优化下一轮选题。',
+      '李世怡｜应聘语核科技市场运营岗。2027届市场营销硕士，英语可作工作语言。具备AI产品内容策划、公众号建设、图文视频制作及传播复盘经验，运用AI辅助内容制作与数据分析，将反馈带回下一轮选题与传播。',
     ],
   },
 }
 
 function Hero({ lang, cueOpacity }: { lang: Lang; cueOpacity: MotionValue<number> }) {
-  const { title, target, paragraphs } = COPY[lang]
+  const { title, paragraphs } = COPY[lang]
   const aboutRef = useRef(null)
   // 触发起点提前：about 顶部位于视口 60% 处即开始（offset[0] 进度 0），到达顶部为进度 1
   const { scrollY: heroScrollY } = useScroll()
@@ -63,7 +61,6 @@ function Hero({ lang, cueOpacity }: { lang: Lang; cueOpacity: MotionValue<number
       >
         {/* 入场动画放内层，避免其 fill 锁住 opacity 覆盖外层滚动 opacity */}
         <div className="about-intro">
-          <p className="application-target">{target}</p>
           <motion.h1 className="about-title" style={{ y: titleY, letterSpacing: titleSpacing }}>
             {title}
           </motion.h1>

@@ -1688,22 +1688,3 @@ canvas {
 
 .wk-card-cover:focus-visible { outline: 2px solid #ffd9b3; outline-offset: 4px; }
 .wk-card-cover:hover { border-color: #ffd9b3; }
-
-/* 保留原站首屏构图，单列本次申请公司与岗位。 */
-.application-target {
-  margin:0 auto 20px;
-  max-width:90vw;
-  font-family:'Chiron GoRound TC','PingFang SC','Microsoft YaHei',sans-serif;
-  font-size:clamp(17px,2.1vw,27px);
-  line-height:1.5;
-  font-weight:500;
-  letter-spacing:.1em;
-  color:#ffd9b3;
-}
-@media(max-width:640px) {
-  .application-target { margin-bottom:14px; font-size:18px; letter-spacing:.04em; }
-}
-
-.application-target { display:inline-block; padding:7px 16px; border:1px solid rgba(255,255,255,.35); border-radius:4px; background:rgba(13,29,25,.78); color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.3); }
-.about-title { text-shadow:0 2px 12px rgba(0,0,0,.45); }
-.about[lang='zh'] .about-body { text-shadow:0 1px 6px rgba(0,0,0,.8); font-size:clamp(12px,1.05vw,14px); }
