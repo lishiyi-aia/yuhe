@@ -7,7 +7,7 @@ const isProd = process.env?.NODE_ENV === 'production'
 
 export default defineConfig({
   // GitHub Pages 部署时使用仓库子路径，确保静态资源可正确加载
-  base: '/yuhe-tech-market-operations/',
+  base: '/yuhe/',
   cacheDir: './.vite-cache',
   plugins: [react()],
   server: { host: true, port: 5206 },

@@ -2,7 +2,7 @@
 
 独立复制自 https://lishiyi-aia.github.io/market-trainee-finetoday/ ，保留原站的版式、3D 场景与滚动交互；原站未修改。
 
-新站：https://lishiyi-aia.github.io/yuhe-tech-market-operations/
+新站：https://lishiyi-aia.github.io/yuhe/
 
 三个项目对应 2026 年 10 月 15 日用户定稿简历：
 
