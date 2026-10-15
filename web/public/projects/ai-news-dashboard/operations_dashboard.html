@@ -1,0 +1,2541 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AI辅助制作的内容运营复盘工具：内置虚构示例，展示渠道、用户问题、价格问卷与核心指标的查看方法，支持本地文件上传，形成下一轮内容建议。" />
+  <title>AI辅助运营分析看板 | 内容运营与传播复盘</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#0F172A',
+            accent: '#94A3B8',
+            ink: '#0F172A',
+            bodyText: '#334155',
+            muted: '#64748B',
+            line: '#E2E8F0',
+            soft: '#F8FAFC',
+            neutralSoft: '#F8FAFC',
+            neutralLine: '#E5E7EB',
+            altSoft: '#F8FAFC',
+            altLine: '#E5E7EB',
+            altText: '#334155',
+            success: '#10B981',
+            orange: '#F97316'
+          },
+          boxShadow: {
+            app: '0 24px 80px rgba(15, 23, 42, 0.12)',
+            card: '0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 28px rgba(15, 23, 42, 0.06)',
+            soft: '0 1px 3px rgba(15, 23, 42, 0.08)'
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root {
+      --primary: #0F172A;
+      --accent: #94A3B8;
+      --ink: #0F172A;
+      --body: #334155;
+      --muted: #64748B;
+      --line: #E2E8F0;
+      --soft: #F8FAFC;
+      --neutral-soft: #F8FAFC;
+      --neutral-line: #E5E7EB;
+      --alt-soft: #F8FAFC;
+      --alt-line: #E5E7EB;
+      --alt-text: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      overflow-y: auto;
+      background: var(--soft);
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100vh;
+      overflow-y: auto;
+      margin: 0;
+      background: var(--soft);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      letter-spacing: 0;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+    }
+
+    @media (min-width: 1024px) {
+      .app-shell {
+        height: 100vh;
+        padding: 24px;
+      }
+    }
+
+    .app-window {
+      min-height: 100vh;
+      background: #FFFFFF;
+      box-shadow: 0 24px 80px rgba(15, 23, 42, 0.12);
+    }
+
+    @media (min-width: 1024px) {
+      .app-window {
+        height: calc(100vh - 48px);
+        max-width: 1280px;
+        margin: 0 auto;
+        border-radius: 24px;
+      }
+    }
+
+    .sidebar {
+      background: #F8FAFC;
+    }
+
+    @media (min-width: 1024px) {
+      .sidebar {
+        position: sticky;
+        top: 0;
+        height: calc(100vh - 48px);
+        flex: 0 0 220px;
+      }
+    }
+
+    .main-content {
+      background: #FFFFFF;
+    }
+
+    @media (min-width: 1024px) {
+      .main-content {
+        height: calc(100vh - 48px);
+        overflow-y: auto;
+      }
+    }
+
+    .nav-list {
+      scrollbar-width: thin;
+      scrollbar-color: #CBD5E1 transparent;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 650;
+      white-space: nowrap;
+      transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.78);
+      color: #0F172A;
+    }
+
+    .nav-item-active {
+      background: #0F172A;
+      color: #FFFFFF;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.16);
+    }
+
+    .nav-item-active:hover {
+      background: #0F172A;
+      color: #FFFFFF;
+    }
+
+    .nav-icon {
+      display: inline-flex;
+      width: 24px;
+      height: 24px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.76);
+      color: #334155;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .nav-item-active .nav-icon {
+      background: rgba(255, 255, 255, 0.18);
+      color: #FFFFFF;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #FFFFFF;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 28px rgba(15, 23, 42, 0.06);
+    }
+
+    .module {
+      scroll-margin-top: 18px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      line-height: 28px;
+      font-weight: 750;
+      color: #0F172A;
+    }
+
+    .section-subtitle {
+      margin-top: 4px;
+      color: #64748B;
+      font-size: 14px;
+      line-height: 22px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #FFFFFF;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    @media (min-width: 1280px) {
+      .metric-grid {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+    }
+
+    .metric-card {
+      min-width: 220px;
+      border-radius: 18px;
+      padding: 20px;
+    }
+
+    .metric-title {
+      white-space: normal;
+      word-break: keep-all;
+      overflow-wrap: normal;
+      line-height: 1.4;
+    }
+
+    .metric-formula {
+      width: fit-content;
+      max-width: 100%;
+      white-space: normal;
+      word-break: keep-all;
+      line-height: 1.45;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 16px;
+      white-space: nowrap;
+    }
+
+    .nav-item-disabled {
+      opacity: 0.42;
+      filter: grayscale(0.2);
+    }
+
+    .nav-item-disabled:hover {
+      background: transparent;
+      color: #334155;
+    }
+
+    .mode-toast {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 40;
+      max-width: 360px;
+      border: 1px solid var(--neutral-line);
+      border-radius: 14px;
+      background: #FFFFFF;
+      box-shadow: 0 18px 48px rgba(15, 23, 42, 0.14);
+    }
+
+    .bar-track {
+      background: #E2E8F0;
+      border-radius: 999px;
+      overflow: clip;
+    }
+
+    .table-wrap {
+      scrollbar-width: thin;
+      scrollbar-color: #CBD5E1 transparent;
+    }
+
+    .table-wrap::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    .table-wrap::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 999px;
+    }
+
+    tbody tr {
+      transition: background-color 140ms ease;
+    }
+
+    tbody tr:hover {
+      background: #F8FAFC;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell bg-soft lg:p-6">
+    <div class="app-window border border-line bg-white shadow-app lg:flex">
+      <aside class="sidebar border-b border-line p-4 lg:rounded-l-[24px] lg:border-b-0 lg:border-r">
+        <div class="flex items-center gap-3 px-1 lg:mb-6">
+          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-white">AI</div>
+          <div class="min-w-0">
+            <p class="truncate text-sm font-bold text-ink">AI 资讯追踪 App</p>
+            <p class="text-xs font-medium text-muted">AI Marketing Review</p>
+          </div>
+        </div>
+
+        <nav id="sidebarNav" class="nav-list mt-4 flex gap-1 overflow-x-auto pb-1 text-sm lg:mt-0 lg:grid lg:max-h-[calc(100vh-230px)] lg:overflow-y-auto lg:pb-0">
+          <a href="#overview" data-target="overview" class="nav-item nav-item-active"><span class="nav-icon">O</span><span>Overview 总览</span></a>
+          <a href="#funnel" data-target="funnel" class="nav-item"><span class="nav-icon">F</span><span>Funnel 路径漏斗</span></a>
+          <a href="#activation" data-target="activation" class="nav-item"><span class="nav-icon">A</span><span>Activation 激活诊断</span></a>
+          <a href="#segments" data-target="segments" class="nav-item"><span class="nav-icon">S</span><span>Segments 用户分群</span></a>
+          <a href="#cross-analysis" data-target="cross-analysis" class="nav-item"><span class="nav-icon">X</span><span>Cross Analysis 交叉分析</span></a>
+          <a href="#data-security" data-target="data-security" class="nav-item"><span class="nav-icon">L</span><span>Security 数据安全</span></a>
+          <a href="#data-quality" data-target="data-quality" class="nav-item"><span class="nav-icon">K</span><span>Quality 数据质量</span></a>
+          <a href="#event-data" data-target="event-data" class="nav-item"><span class="nav-icon">E</span><span>Event Data 行为埋点</span></a>
+          <a href="#daily-metrics" data-target="daily-metrics" class="nav-item"><span class="nav-icon">D</span><span>Daily Metrics 日报指标</span></a>
+          <a href="#survey-feedback" data-target="survey-feedback" class="nav-item"><span class="nav-icon">Q</span><span>Survey Feedback 问卷反馈</span></a>
+          <a href="#issues" data-target="issues" class="nav-item"><span class="nav-icon">I</span><span>Issues 问题归因</span></a>
+          <a href="#suggestions" data-target="suggestions" class="nav-item"><span class="nav-icon">G</span><span>Suggestions 建议动作</span></a>
+          <a href="#data-preview" data-target="data-preview" class="nav-item"><span class="nav-icon">P</span><span>Data 数据预览</span></a>
+        </nav>
+
+        <div class="mt-5 hidden rounded-2xl border border-neutralLine bg-white/70 p-3 lg:block">
+          <p class="text-xs font-bold text-bodyText">数据安全说明</p>
+          <p class="mt-2 text-xs leading-5 text-muted">预览表会隐藏手机号、IP、UA、昵称等个人信息字段，仅保留分析所需字段。</p>
+        </div>
+      </aside>
+
+      <main id="mainContent" class="main-content min-w-0 flex-1 lg:rounded-r-[24px]">
+        <header id="overview" class="module border-b border-line px-5 py-5 sm:px-6 lg:px-8">
+          <div class="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+            <div class="max-w-4xl">
+              <div class="mb-3 flex flex-wrap items-center gap-2">
+                <span class="badge border border-neutralLine bg-neutralSoft text-primary">AI辅助制作 · 内容复盘演示</span>
+                <span class="badge border border-altLine bg-altSoft text-altText">本地安全模式</span>
+                <span id="modeBadge" class="badge border border-line bg-white text-muted">当前模式：用户路径数据</span>
+                <span id="modeCompleteness" class="badge border border-line bg-white text-muted">字段完整</span>
+              </div>
+              <h1 class="text-2xl font-bold tracking-tight text-ink sm:text-3xl">AI辅助运营分析看板</h1>
+              <p class="mt-3 text-sm leading-6 text-bodyText">
+                本工具为AI辅助制作的内容复盘演示。围绕用户问题、价格问卷、渠道来源与核心指标整理反馈，形成下一轮选题、场景案例和FAQ的调整方向。案例中“100+条内容、注册环比50%、首次专题创建率相对约15%”为实习期汇总；本工具的内置明细与分析结果均为虚构示例，不是这些业绩的依据。
+              </p>
+              <a href="case_study.html#research" class="mt-3 inline-flex items-center text-sm font-semibold text-primary underline">返回内容运营与传播复盘项目 ↗</a>
+              <div class="mt-4 rounded-xl border border-orange/20 bg-orange/10 p-4">
+                <p class="text-sm font-bold text-ink">数据权限与安全提醒</p>
+                <p class="mt-2 text-xs leading-5 text-bodyText">请仅上传已获授权的数据文件。不要上传包含手机号、邮箱、IP、设备号、真实用户 ID 等敏感信息的原始数据。上传文件仅在浏览器本地解析，不上传服务器，不连接数据库，不调用外部 API。</p>
+              </div>
+            </div>
+
+            <div class="rounded-2xl border border-dashed border-neutralLine bg-neutralSoft p-3 xl:w-[390px]">
+              <div class="flex flex-wrap items-center gap-2">
+                <input id="fileInput" type="file" accept=".csv,.txt,.xlsx,.xls,text/csv,text/plain" class="sr-only" />
+                <label for="fileInput" class="inline-flex cursor-pointer items-center justify-center rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#1E293B]">上传文件</label>
+                <button id="resetData" type="button" class="inline-flex items-center justify-center rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-bodyText transition hover:border-primary hover:text-primary">恢复示例数据</button>
+              </div>
+              <p class="mt-2 text-xs leading-5 text-muted">支持 CSV / TXT / XLSX，上传后自动识别用户路径、行为埋点、问卷反馈或核心指标日报数据。</p>
+              <p id="dataStatus" class="mt-3 rounded-lg border border-line bg-white px-3 py-2 text-xs leading-5 text-muted">当前使用：内置虚构用户路径示例，共 20 条。</p>
+            </div>
+          </div>
+
+          <div class="mt-5 grid gap-4 xl:grid-cols-[1.3fr_1fr]">
+            <div class="rounded-xl border border-line bg-slate-50 p-4">
+              <p class="text-sm font-bold text-ink">数据说明</p>
+              <p class="mt-2 text-xs leading-5 text-muted">
+                内置用户、回答、金额、日期和指标均为虚构示例，不是实习期业务明细。字段参考资讯产品的用户路径、使用场景、反馈与价格问卷，用于演示筛选、分类及复盘方法，不代表真实渠道表现或实际增长。
+              </p>
+              <p class="mt-2 text-xs leading-5 text-muted">
+                当上传真实导出的行为数据、问卷数据或日报数据时，系统只展示可分析字段，不展示手机号、IP、UA、昵称等个人信息字段。
+              </p>
+            </div>
+            <div id="fieldReport" class="rounded-xl border border-line bg-white p-4 text-xs leading-5 text-muted"></div>
+          </div>
+
+          <div class="mt-5 rounded-xl border border-neutralLine bg-neutralSoft p-3">
+            <div class="mb-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <p class="text-sm font-bold text-ink">数据模式切换</p>
+              <p class="text-xs leading-5 text-muted">切换虚构示例，查看不同数据结构下的分析方法；上传文件后按文件内容展示结果。</p>
+            </div>
+            <div id="modeSwitch" class="flex flex-wrap gap-2"></div>
+          </div>
+        </header>
+
+        <div class="space-y-6 px-5 py-6 sm:px-6 lg:px-8">
+          <div id="modeHint" class="mode-toast hidden px-4 py-3 text-sm leading-6 text-bodyText"></div>
+
+          <section class="module metric-grid" id="metricCards"></section>
+
+          <section id="data-security" class="module panel p-5">
+            <div class="mb-5">
+              <h2 class="section-title">数据安全检测</h2>
+              <p class="section-subtitle">自动识别敏感字段并默认隐藏，必要用户标识会转换为匿名 ID。</p>
+            </div>
+            <div id="securityContent"></div>
+          </section>
+
+          <section id="data-quality" class="module panel p-5">
+            <div class="mb-5">
+              <h2 class="section-title">数据质量检查</h2>
+              <p class="section-subtitle">检查当前数据行数、字段数、空值比例、重复用户和模块可分析状态。</p>
+            </div>
+            <div id="qualityContent"></div>
+          </section>
+
+          <section class="module panel p-4" id="status-tabs">
+            <div class="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h2 class="section-title">用户状态 Tab</h2>
+                <p class="section-subtitle">快速切换用户群体，所有适用模块会同步更新。</p>
+              </div>
+              <span id="tabStatus" class="badge border border-neutralLine bg-neutralSoft text-primary"></span>
+            </div>
+            <div id="statusTabs" class="flex flex-wrap gap-2"></div>
+          </section>
+
+          <section class="module panel p-5" id="filters">
+            <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <h2 class="section-title">用户分层筛选器</h2>
+                <p class="section-subtitle">模拟 SQL 条件筛选与分组统计，用于查看不同用户群体在激活、留存意向、付费意愿和问题类型上的差异。</p>
+              </div>
+              <button id="resetFilters" type="button" class="inline-flex w-fit items-center justify-center rounded-lg border border-neutralLine bg-white px-3 py-2 text-sm font-semibold text-primary transition hover:bg-neutralSoft">重置筛选</button>
+            </div>
+            <div id="filterControls" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"></div>
+            <p id="filterStatus" class="mt-4 rounded-lg border border-neutralLine bg-neutralSoft px-3 py-2 text-xs leading-5 text-muted"></p>
+            <p id="filterInsight" class="mt-3 rounded-lg border border-line bg-white px-3 py-2 text-sm leading-6 text-bodyText"></p>
+          </section>
+
+          <section id="funnel" class="module panel p-5">
+            <div class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h2 class="section-title">主路径漏斗</h2>
+                <p class="section-subtitle">注册 → 浏览产品介绍 → 创建资讯专题 → 查看 AI 聚合结果 → 完成首次核心体验</p>
+              </div>
+              <span id="dropoffBadge" class="badge bg-primary text-white"></span>
+            </div>
+            <div id="funnelContent"></div>
+          </section>
+
+          <section id="activation" class="module panel p-5">
+            <div class="mb-5">
+              <h2 class="section-title">用户激活与留存意向分析</h2>
+              <p class="section-subtitle">分析用户是否真正理解并开始使用 AI 资讯追踪 App 的核心功能。</p>
+            </div>
+            <div id="activationContent"></div>
+          </section>
+
+          <section id="segments" class="module panel p-5">
+            <div class="mb-5">
+              <h2 class="section-title">用户分群分析</h2>
+              <p class="section-subtitle">按 user_type 统计激活、留存意向、付费意愿、主要功能需求和问题类型。</p>
+            </div>
+            <div id="segmentsContent"></div>
+          </section>
+
+          <section id="cross-analysis" class="module panel p-5">
+            <div class="mb-5 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+              <div>
+                <h2 class="section-title">交叉分析与显著性检验</h2>
+                <p class="section-subtitle">通过交叉表、行内占比、卡方检验和效应量，探索不同用户群体在功能需求、问题类型和付费意愿上的差异。</p>
+              </div>
+              <div id="crossControls" class="grid gap-3 sm:grid-cols-2"></div>
+            </div>
+            <div id="crossContent"></div>
+          </section>
+
+          <section id="event-data" class="module panel p-5">
+            <div class="mb-5">
+              <h2 class="section-title">行为埋点分析</h2>
+              <p class="section-subtitle">识别 PostHog 类行为事件数据中的打开频率、回访用户和每日活跃趋势。</p>
+            </div>
+            <div id="eventContent"></div>
+          </section>
+
+          <section id="daily-metrics" class="module panel p-5">
+            <div class="mb-5">
+              <h2 class="section-title">核心指标日报分析</h2>
+              <p class="section-subtitle">分析 DAU、拉活来源、留存、专题功能使用和 Push 效率。</p>
+            </div>
+            <div id="dailyContent"></div>
+          </section>
+
+          <section id="survey-feedback" class="module panel p-5">
+            <div class="mb-5">
+              <h2 class="section-title">问卷反馈分析</h2>
+              <p class="section-subtitle">分析用户画像、使用状态、体验评分、痛点、功能价值感知和付费意愿。</p>
+            </div>
+            <div id="surveyContent"></div>
+          </section>
+
+          <section id="issues" class="module grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+            <div class="panel p-5">
+              <div class="mb-5">
+                <h2 class="section-title">反馈问题分类</h2>
+                <p class="section-subtitle">按照 issue_type 或问卷开放反馈统计问题类型、影响路径节点和建议动作。</p>
+              </div>
+              <div id="issuesContent"></div>
+            </div>
+            <div class="panel p-5">
+              <div class="mb-5">
+                <h2 class="section-title">层级路径诊断</h2>
+                <p class="section-subtitle">借鉴层级路径展示方式，定位首次核心体验前的主要流失原因。</p>
+              </div>
+              <div id="pathTreeContent"></div>
+            </div>
+          </section>
+
+          <section class="module grid gap-6 xl:grid-cols-2" id="issue-category">
+            <div class="rounded-2xl border border-neutralLine bg-neutralSoft p-5 shadow-card">
+              <div class="mb-5 flex items-start justify-between gap-3">
+                <div>
+                  <h2 class="section-title">运营可解决问题</h2>
+                  <p class="section-subtitle">通过内容、教程、FAQ、Prompt 示例和用户教育内容改善。</p>
+                </div>
+                <span id="opsIssueBadge" class="badge bg-white text-primary"></span>
+              </div>
+              <div id="opsIssueContent" class="space-y-3"></div>
+            </div>
+            <div class="rounded-2xl border border-altLine bg-altSoft p-5 shadow-card">
+              <div class="mb-5 flex items-start justify-between gap-3">
+                <div>
+                  <h2 class="section-title">产品待优化问题</h2>
+                  <p class="section-subtitle">沉淀为入口层级、首次流程、分类方式和提醒设置路径的产品反馈。</p>
+                </div>
+                <span id="productIssueBadge" class="badge bg-white text-altText"></span>
+              </div>
+              <div id="productIssueContent" class="space-y-3"></div>
+            </div>
+          </section>
+
+          <section id="suggestions" class="module panel p-5">
+            <div class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h2 class="section-title">建议动作</h2>
+                <p class="section-subtitle">根据当前字段与统计结果生成内容复盘提示，用于整理下一轮选题和沟通事项；示例中的建议不代表历史工作成果。</p>
+              </div>
+              <span id="suggestionModeBadge" class="badge border border-neutralLine bg-neutralSoft text-primary"></span>
+            </div>
+            <div id="suggestionsContent"></div>
+          </section>
+
+          <section id="data-preview" class="module panel p-5">
+            <div class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h2 class="section-title">数据预览表</h2>
+                <p class="section-subtitle">展示当前筛选后的关键字段，自动隐藏手机号、IP、UA、昵称等个人信息字段。</p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span id="previewCount" class="badge border border-line bg-slate-50 text-muted"></span>
+                <button id="togglePreviewFields" type="button" class="rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-bodyText transition hover:border-primary hover:text-primary">展开全部字段</button>
+              </div>
+            </div>
+            <div id="previewContent"></div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const pathRequiredFields = ['user_id', 'registered', 'browsed_intro', 'created_topic', 'viewed_ai_summary', 'completed_core_action'];
+    const pathOptionalFields = ['user_type', 'source_channel', 'enabled_reminder', 'active_days', 'topic_count', 'faq_viewed', 'prompt_viewed', 'returned_7d', 'use_scene', 'function_need', 'pay_willingness', 'price_acceptance', 'feedback', 'issue_type'];
+    const pathAllFields = [...pathRequiredFields, ...pathOptionalFields];
+    const pathBooleanOptionalFields = ['enabled_reminder', 'faq_viewed', 'prompt_viewed', 'returned_7d'];
+    const pathNumberOptionalFields = ['active_days', 'topic_count'];
+    const pathFilterFields = ['user_type', 'source_channel', 'pay_willingness', 'issue_type', 'use_scene'];
+    const pathCrossDimensions = ['user_type', 'use_scene', 'function_need', 'issue_type', 'pay_willingness', 'price_acceptance', 'source_channel', 'completed_core_action'];
+    const fieldLabels = {
+      user_type: '用户类型',
+      source_channel: '来源渠道',
+      pay_willingness: '付费意愿',
+      issue_type: '问题类型',
+      use_scene: '使用场景',
+      function_need: '功能需求',
+      price_acceptance: '价格接受度',
+      completed_core_action: '首次核心体验'
+    };
+    const statusTabs = [
+      { key: 'all', label: '全部用户' },
+      { key: 'completed', label: '已完成核心体验' },
+      { key: 'incomplete', label: '未完成核心体验' },
+      { key: 'highPay', label: '高付费意愿' },
+      { key: 'pendingIssue', label: '问题待归因' }
+    ];
+    const opsIssueTypes = ['功能理解', '使用场景不清晰', 'Prompt 不会用', '价格顾虑', '内容价值说明不足'];
+    const productIssueTypes = ['入口不明显', '流程复杂', '内容分类不清晰', '提醒设置不明显', '首次体验路径过长'];
+    const sensitiveFieldKeywords = [
+      '手机号', 'mobile', 'phone', '邮箱', 'email', '昵称', 'name', 'IP', 'UA',
+      'user_id', 'user_agent', 'device_id', 'distinct_id', 'Person.id', 'Person.distinct_id',
+      'Referrer', 'openid', 'unionid'
+    ];
+    const identifierFieldPatterns = [/^user_id$/i, /^用户id$/i, /^用户标识$/i, /distinct.?id/i, /^person\.id$/i, /^person\.distinct_id$/i, /openid/i, /unionid/i, /device.?id/i];
+    const privateFieldPatterns = [
+      /^user_id$/i, /手机号/i, /mobile/i, /phone/i, /邮箱/i, /email/i, /昵称/i, /(^|[_\s.])name($|[_\s.])/i,
+      /^ip$/i, /(^|[_\s.])ip($|[_\s.])/i, /^ua$/i, /user.?agent/i, /device.?id/i,
+      /distinct.?id/i, /^person\.id$/i, /^person\.distinct_id$/i, /referrer/i, /openid/i,
+      /unionid/i, /自定义字段/i, /^用户标识$/i
+    ];
+
+    const pathIssueMeta = {
+      '功能理解': { node: '浏览产品介绍 → 创建资讯专题', suggestion: '增加新手引导、功能说明、案例内容' },
+      '使用场景不清晰': { node: '注册 → 浏览产品介绍', suggestion: '增加不同用户类型的场景化模板' },
+      'Prompt 不会用': { node: '查看 AI 聚合结果 → 完成首次核心体验', suggestion: '增加 Prompt 示例、常用模板、输入提示' },
+      '入口不明显': { node: '浏览产品介绍 → 创建资讯专题', suggestion: '反馈给产品优化入口层级和按钮提示' },
+      '流程复杂': { node: '创建资讯专题 → 查看 AI 聚合结果', suggestion: '反馈给产品简化首次专题创建流程' },
+      '价格顾虑': { node: '完成首次核心体验 → 付费意向', suggestion: '增加试用权益、价值说明和会员权益对比' },
+      '内容分类不清晰': { node: '查看 AI 聚合结果 → 完成首次核心体验', suggestion: '优化内容分类和收藏整理路径' },
+      '提醒设置不明显': { node: '完成首次核心体验 → 持续追踪', suggestion: '优化提醒设置入口与引导文案' },
+      '首次体验路径过长': { node: '注册 → 完成首次核心体验', suggestion: '缩短首次体验路径并提供默认专题模板' },
+      '内容价值说明不足': { node: '浏览产品介绍 → 创建资讯专题', suggestion: '强化内容价值、会员权益和使用收益说明' },
+      '未标注问题': { node: '待补充', suggestion: '补充 issue_type 后再进行精细归因' }
+    };
+
+    const samplePathData = [
+      { user_id: 'AIA001', user_type: 'AI 科技关注者', source_channel: '小红书', registered: 1, browsed_intro: 1, created_topic: 1, viewed_ai_summary: 1, completed_core_action: 1, enabled_reminder: 1, active_days: 12, topic_count: 3, faq_viewed: 1, prompt_viewed: 1, returned_7d: 1, use_scene: '每日 AI 资讯浏览', function_need: 'AI 资讯聚合', pay_willingness: '高', price_acceptance: '19.9 元/月', feedback: '想快速找到 AI 热点和行业变化，AI 摘要很省时间。', issue_type: '内容价值说明不足' },
+      { user_id: 'AIA002', user_type: '互联网从业者', source_channel: '公众号', registered: 1, browsed_intro: 1, created_topic: 0, viewed_ai_summary: 0, completed_core_action: 0, enabled_reminder: 0, active_days: 2, topic_count: 0, faq_viewed: 0, prompt_viewed: 1, returned_7d: 0, use_scene: '创建专题追踪', function_need: '专题追踪', pay_willingness: '中', price_acceptance: '9.9 元/月', feedback: '不知道怎么创建 AI 行业专题，也不确定应该先追踪哪些关键词。', issue_type: '功能理解' },
+      { user_id: 'AIA003', user_type: '投资研究用户', source_channel: '朋友推荐', registered: 1, browsed_intro: 1, created_topic: 1, viewed_ai_summary: 1, completed_core_action: 1, enabled_reminder: 1, active_days: 18, topic_count: 5, faq_viewed: 1, prompt_viewed: 0, returned_7d: 1, use_scene: '跟踪投资相关信息', function_need: '关键词监测', pay_willingness: '高', price_acceptance: '29.9 元/月', feedback: '希望能按公司、技术方向、产业链环节分类追踪。', issue_type: '内容分类不清晰' },
+      { user_id: 'AIA004', user_type: '科技内容创作者', source_channel: '短视频平台', registered: 1, browsed_intro: 1, created_topic: 1, viewed_ai_summary: 0, completed_core_action: 0, enabled_reminder: 0, active_days: 3, topic_count: 1, faq_viewed: 0, prompt_viewed: 1, returned_7d: 0, use_scene: '查找内容选题', function_need: 'AI 摘要生成', pay_willingness: '中', price_acceptance: '19.9 元/月', feedback: '希望有适合科技内容创作者的选题模板，但结果入口不太明显。', issue_type: '入口不明显' },
+      { user_id: 'AIA005', user_type: '高校学生', source_channel: '自然搜索', registered: 1, browsed_intro: 1, created_topic: 0, viewed_ai_summary: 0, completed_core_action: 0, enabled_reminder: 0, active_days: 1, topic_count: 0, faq_viewed: 1, prompt_viewed: 1, returned_7d: 0, use_scene: '学习 AI 行业知识', function_need: 'Prompt 示例', pay_willingness: '低', price_acceptance: '暂不付费', feedback: '想要更多 Prompt 示例帮助生成分析摘要，不确定是否值得付费。', issue_type: 'Prompt 不会用' },
+      { user_id: 'AIA006', user_type: '重度资讯消费者', source_channel: 'App Store 搜索', registered: 1, browsed_intro: 1, created_topic: 1, viewed_ai_summary: 1, completed_core_action: 0, enabled_reminder: 0, active_days: 4, topic_count: 2, faq_viewed: 0, prompt_viewed: 0, returned_7d: 1, use_scene: '收藏整理资讯', function_need: '收藏整理', pay_willingness: '中', price_acceptance: '9.9 元/月', feedback: '收藏功能有用，但不知道如何整理专题，第一次使用路径有点复杂。', issue_type: '流程复杂' },
+      { user_id: 'AIA007', user_type: '半导体行业关注者', source_channel: '社群分享', registered: 1, browsed_intro: 1, created_topic: 1, viewed_ai_summary: 1, completed_core_action: 1, enabled_reminder: 1, active_days: 16, topic_count: 4, faq_viewed: 1, prompt_viewed: 1, returned_7d: 1, use_scene: '关注半导体产业动态', function_need: '行业动态跟踪', pay_willingness: '高', price_acceptance: '29.9 元/月', feedback: '想追踪半导体产业链但不知道关键词怎么设置，希望有默认模板。', issue_type: '使用场景不清晰' },
+      { user_id: 'AIA008', user_type: 'AI 科技关注者', source_channel: '公众号', registered: 1, browsed_intro: 0, created_topic: 0, viewed_ai_summary: 0, completed_core_action: 0, enabled_reminder: 0, active_days: 0, topic_count: 0, faq_viewed: 0, prompt_viewed: 0, returned_7d: 0, use_scene: '每日 AI 资讯浏览', function_need: '热点提醒', pay_willingness: '低', price_acceptance: '暂不付费', feedback: '首次进入后信息很多，不确定和普通资讯订阅有什么区别。', issue_type: '内容价值说明不足' },
+      { user_id: 'AIA009', user_type: '互联网从业者', source_channel: '小红书', registered: 1, browsed_intro: 1, created_topic: 1, viewed_ai_summary: 1, completed_core_action: 1, enabled_reminder: 0, active_days: 9, topic_count: 2, faq_viewed: 1, prompt_viewed: 1, returned_7d: 1, use_scene: '创建专题追踪', function_need: '专题追踪', pay_willingness: '高', price_acceptance: '19.9 元/月', feedback: '觉得 AI 聚合结果有价值，希望新建专题时能自动推荐关键词。', issue_type: '首次体验路径过长' },
+      { user_id: 'AIA010', user_type: '科技内容创作者', source_channel: '社群分享', registered: 1, browsed_intro: 1, created_topic: 1, viewed_ai_summary: 1, completed_core_action: 1, enabled_reminder: 1, active_days: 11, topic_count: 4, faq_viewed: 1, prompt_viewed: 1, returned_7d: 1, use_scene: '查找内容选题', function_need: 'AI 摘要生成', pay_willingness: '高', price_acceptance: '29.9 元/月', feedback: '适合找科技内容选题，但希望能保存 Prompt 模板。', issue_type: 'Prompt 不会用' },
+      { user_id: 'AIA011', user_type: '投资研究用户', source_channel: '自然搜索', registered: 1, browsed_intro: 1, created_topic: 1, viewed_ai_summary: 0, completed_core_action: 0, enabled_reminder: 0, active_days: 2, topic_count: 1, faq_viewed: 0, prompt_viewed: 0, returned_7d: 0, use_scene: '跟踪投资相关信息', function_need: '关键词监测', pay_willingness: '中', price_acceptance: '19.9 元/月', feedback: '创建专题后不知道去哪里看 AI 聚合结果。', issue_type: '入口不明显' },
+      { user_id: 'AIA012', user_type: '高校学生', source_channel: '朋友推荐', registered: 1, browsed_intro: 1, created_topic: 1, viewed_ai_summary: 1, completed_core_action: 0, enabled_reminder: 0, active_days: 3, topic_count: 1, faq_viewed: 1, prompt_viewed: 1, returned_7d: 0, use_scene: '学习 AI 行业知识', function_need: 'AI 资讯聚合', pay_willingness: '低', price_acceptance: '暂不付费', feedback: '内容有用但价格有点犹豫，希望先试用。', issue_type: '价格顾虑' },
+      { user_id: 'AIA013', user_type: '重度资讯消费者', source_channel: 'App Store 搜索', registered: 1, browsed_intro: 1, created_topic: 1, viewed_ai_summary: 1, completed_core_action: 1, enabled_reminder: 1, active_days: 20, topic_count: 6, faq_viewed: 0, prompt_viewed: 0, returned_7d: 1, use_scene: '每日 AI 资讯浏览', function_need: '热点提醒', pay_willingness: '高', price_acceptance: '19.9 元/月', feedback: '提醒很有用，但入口可以更明显。', issue_type: '提醒设置不明显' },
+      { user_id: 'AIA014', user_type: '半导体行业关注者', source_channel: '公众号', registered: 1, browsed_intro: 1, created_topic: 1, viewed_ai_summary: 1, completed_core_action: 1, enabled_reminder: 1, active_days: 15, topic_count: 4, faq_viewed: 1, prompt_viewed: 0, returned_7d: 1, use_scene: '关注半导体产业动态', function_need: '关键词监测', pay_willingness: '高', price_acceptance: '29.9 元/月', feedback: '想按产业链上中下游分类追踪。', issue_type: '内容分类不清晰' },
+      { user_id: 'AIA015', user_type: 'AI 科技关注者', source_channel: '短视频平台', registered: 1, browsed_intro: 1, created_topic: 0, viewed_ai_summary: 0, completed_core_action: 0, enabled_reminder: 0, active_days: 1, topic_count: 0, faq_viewed: 0, prompt_viewed: 0, returned_7d: 0, use_scene: '每日 AI 资讯浏览', function_need: 'AI 资讯聚合', pay_willingness: '中', price_acceptance: '9.9 元/月', feedback: '看了介绍但没理解创建专题能带来什么。', issue_type: '功能理解' },
+      { user_id: 'AIA016', user_type: '互联网从业者', source_channel: '社群分享', registered: 1, browsed_intro: 1, created_topic: 1, viewed_ai_summary: 1, completed_core_action: 1, enabled_reminder: 1, active_days: 10, topic_count: 3, faq_viewed: 1, prompt_viewed: 1, returned_7d: 1, use_scene: '创建专题追踪', function_need: '专题追踪', pay_willingness: '高', price_acceptance: '19.9 元/月', feedback: '用来跟踪竞品和行业变化，愿意为稳定提醒付费。', issue_type: '未标注问题' },
+      { user_id: 'AIA017', user_type: '科技内容创作者', source_channel: '小红书', registered: 1, browsed_intro: 1, created_topic: 1, viewed_ai_summary: 1, completed_core_action: 0, enabled_reminder: 0, active_days: 5, topic_count: 2, faq_viewed: 1, prompt_viewed: 1, returned_7d: 0, use_scene: '查找内容选题', function_need: 'Prompt 示例', pay_willingness: '中', price_acceptance: '9.9 元/月', feedback: '想要更多 Prompt 示例，不知道摘要怎么改成自己的表达。', issue_type: 'Prompt 不会用' },
+      { user_id: 'AIA018', user_type: '投资研究用户', source_channel: '朋友推荐', registered: 1, browsed_intro: 1, created_topic: 1, viewed_ai_summary: 1, completed_core_action: 1, enabled_reminder: 1, active_days: 13, topic_count: 4, faq_viewed: 0, prompt_viewed: 0, returned_7d: 1, use_scene: '跟踪投资相关信息', function_need: '行业动态跟踪', pay_willingness: '高', price_acceptance: '29.9 元/月', feedback: '希望输出行业报告整理功能。', issue_type: '内容价值说明不足' },
+      { user_id: 'AIA019', user_type: '高校学生', source_channel: '自然搜索', registered: 1, browsed_intro: 0, created_topic: 0, viewed_ai_summary: 0, completed_core_action: 0, enabled_reminder: 0, active_days: 0, topic_count: 0, faq_viewed: 0, prompt_viewed: 0, returned_7d: 0, use_scene: '学习 AI 行业知识', function_need: 'AI 资讯聚合', pay_willingness: '低', price_acceptance: '暂不付费', feedback: '不太清楚适合学生怎么用。', issue_type: '使用场景不清晰' },
+      { user_id: 'AIA020', user_type: '重度资讯消费者', source_channel: '短视频平台', registered: 1, browsed_intro: 1, created_topic: 1, viewed_ai_summary: 0, completed_core_action: 0, enabled_reminder: 0, active_days: 2, topic_count: 1, faq_viewed: 0, prompt_viewed: 0, returned_7d: 0, use_scene: '收藏整理资讯', function_need: '收藏整理', pay_willingness: '中', price_acceptance: '9.9 元/月', feedback: '内容流里分类不清楚，收藏整理路径需要更直观。', issue_type: '内容分类不清晰' }
+    ];
+
+    const sampleEventData = [
+      { 'Person.distinct_id': 'u_001', event: 'Application Opened', timestamp: '2026-07-15T08:12:00+10:00', Screen: 'Home', 'properties.$lib': 'iOS' },
+      { 'Person.distinct_id': 'u_001', event: 'Application Opened', timestamp: '2026-07-15T21:08:00+10:00', Screen: 'Topic Feed', 'properties.$lib': 'iOS' },
+      { 'Person.distinct_id': 'u_001', event: 'Application Opened', timestamp: '2026-07-16T09:22:00+10:00', Screen: 'Home', 'properties.$lib': 'iOS' },
+      { 'Person.distinct_id': 'u_001', event: 'Application Opened', timestamp: '2026-07-17T10:15:00+10:00', Screen: 'AI Summary', 'properties.$lib': 'iOS' },
+      { 'Person.distinct_id': 'u_002', event: 'Application Opened', timestamp: '2026-07-15T12:01:00+10:00', Screen: 'Home', 'properties.$lib': 'Android' },
+      { 'Person.distinct_id': 'u_002', event: 'Application Opened', timestamp: '2026-07-18T12:36:00+10:00', Screen: 'Notification', 'properties.$lib': 'Android' },
+      { 'Person.distinct_id': 'u_003', event: 'Application Opened', timestamp: '2026-07-15T18:45:00+10:00', Screen: 'Home', 'properties.$lib': 'iOS' },
+      { 'Person.distinct_id': 'u_004', event: 'Application Opened', timestamp: '2026-07-16T08:03:00+10:00', Screen: 'Home', 'properties.$lib': 'Web' },
+      { 'Person.distinct_id': 'u_004', event: 'Application Opened', timestamp: '2026-07-16T20:10:00+10:00', Screen: 'Topic Feed', 'properties.$lib': 'Web' },
+      { 'Person.distinct_id': 'u_004', event: 'Application Opened', timestamp: '2026-07-17T08:20:00+10:00', Screen: 'Home', 'properties.$lib': 'Web' },
+      { 'Person.distinct_id': 'u_004', event: 'Application Opened', timestamp: '2026-07-18T08:44:00+10:00', Screen: 'AI Summary', 'properties.$lib': 'Web' },
+      { 'Person.distinct_id': 'u_004', event: 'Application Opened', timestamp: '2026-07-19T09:05:00+10:00', Screen: 'Home', 'properties.$lib': 'Web' },
+      { 'Person.distinct_id': 'u_005', event: 'Application Opened', timestamp: '2026-07-16T19:27:00+10:00', Screen: 'Home', 'properties.$lib': 'Android' },
+      { 'Person.distinct_id': 'u_006', event: 'Application Opened', timestamp: '2026-07-17T11:18:00+10:00', Screen: 'Home', 'properties.$lib': 'iOS' },
+      { 'Person.distinct_id': 'u_006', event: 'Application Opened', timestamp: '2026-07-18T11:33:00+10:00', Screen: 'Topic Feed', 'properties.$lib': 'iOS' },
+      { 'Person.distinct_id': 'u_007', event: 'Application Opened', timestamp: '2026-07-19T22:16:00+10:00', Screen: 'Home', 'properties.$lib': 'Android' }
+    ];
+
+    const sampleSurveyData = [
+      { '年龄段': '18-24', '职业 / 所在行业': '高校学生', '城市 / 国家': '上海', '使用情况': '试用过', '使用体验评价': 4, '使用中不顺的地方': '功能理解、Prompt 不会用', '最初使用原因': '学习 AI 行业知识', '最有价值能力': 'AI 摘要生成、Prompt 示例', '是否愿意付费': '暂不愿意', '价格接受度': '9.9 元/月', '付费犹豫原因': '价格顾虑', '最需要优先改进的一点': '想要更多 Prompt 示例帮助生成分析摘要' },
+      { '年龄段': '25-34', '职业 / 所在行业': '互联网从业者', '城市 / 国家': '北京', '使用情况': '持续使用', '使用体验评价': 5, '使用中不顺的地方': '入口不明显', '最初使用原因': '每日 AI 资讯浏览', '最有价值能力': '专题追踪、热点提醒', '是否愿意付费': '愿意', '价格接受度': '19.9 元/月', '付费犹豫原因': '不确定会员权益', '最需要优先改进的一点': '提醒设置入口不明显' },
+      { '年龄段': '25-34', '职业 / 所在行业': '科技内容创作者', '城市 / 国家': '杭州', '使用情况': '持续使用', '使用体验评价': 4, '使用中不顺的地方': '内容分类不清晰、Prompt 不会用', '最初使用原因': '查找内容选题', '最有价值能力': 'AI 摘要生成、专题追踪', '是否愿意付费': '愿意', '价格接受度': '19.9 元/月', '付费犹豫原因': '希望先试用', '最需要优先改进的一点': '希望有适合内容创作者的选题模板' },
+      { '年龄段': '35-44', '职业 / 所在行业': '投资研究', '城市 / 国家': '深圳', '使用情况': '持续使用', '使用体验评价': 5, '使用中不顺的地方': '内容分类不清晰', '最初使用原因': '跟踪投资相关信息', '最有价值能力': '关键词监测、行业动态跟踪', '是否愿意付费': '愿意', '价格接受度': '29.9 元/月', '付费犹豫原因': '不确定数据覆盖范围', '最需要优先改进的一点': '希望能按公司、技术方向、产业链环节分类追踪' },
+      { '年龄段': '25-34', '职业 / 所在行业': 'AI 科技关注者', '城市 / 国家': '广州', '使用情况': '偶尔使用', '使用体验评价': 3, '使用中不顺的地方': '使用场景不清晰', '最初使用原因': '每日 AI 资讯浏览', '最有价值能力': 'AI 资讯聚合', '是否愿意付费': '不确定', '价格接受度': '9.9 元/月', '付费犹豫原因': '不确定是否值得付费', '最需要优先改进的一点': '希望更快看懂和普通资讯订阅的区别' },
+      { '年龄段': '18-24', '职业 / 所在行业': '高校学生', '城市 / 国家': '南京', '使用情况': '未持续使用', '使用体验评价': 3, '使用中不顺的地方': '流程复杂、功能理解', '最初使用原因': '学习 AI 行业知识', '最有价值能力': 'AI 资讯聚合', '是否愿意付费': '暂不愿意', '价格接受度': '暂不付费', '付费犹豫原因': '价格顾虑', '最需要优先改进的一点': '第一次创建专题步骤有点复杂' },
+      { '年龄段': '35-44', '职业 / 所在行业': '半导体行业关注者', '城市 / 国家': '苏州', '使用情况': '持续使用', '使用体验评价': 4, '使用中不顺的地方': '关键词设置困难、内容分类不清晰', '最初使用原因': '关注半导体产业动态', '最有价值能力': '关键词监测、行业动态跟踪', '是否愿意付费': '愿意', '价格接受度': '29.9 元/月', '付费犹豫原因': '希望覆盖更多产业链信息', '最需要优先改进的一点': '想追踪半导体产业链但不知道关键词怎么设置' },
+      { '年龄段': '25-34', '职业 / 所在行业': '重度资讯消费者', '城市 / 国家': '成都', '使用情况': '偶尔使用', '使用体验评价': 4, '使用中不顺的地方': '收藏整理不清晰', '最初使用原因': '收藏整理资讯', '最有价值能力': '收藏整理、热点提醒', '是否愿意付费': '不确定', '价格接受度': '9.9 元/月', '付费犹豫原因': '使用频率不稳定', '最需要优先改进的一点': '收藏功能有用，但不知道如何整理专题' }
+    ];
+
+    const sampleDailyData = [
+      { '日期': '2026-07-15', '日活': 1080, '冷启 UV': 520, 'icon 拉活 UV': 210, 'push 拉活 UV': 96, '端外 H5 拉活 UV': 82, '次日留存': '36%', 'app 人均使用时长': 6.2, '注册账号用户数': 318, '关注专题次数': 168, '关注专题 UV': 92, '被关注专题数': 78, '创建专题数量': 62, '创建专题 UV': 45, '入库新闻数': 1180, 'push 发送量': 9800, 'push 发送用户数': 1880 },
+      { '日期': '2026-07-16', '日活': 1165, '冷启 UV': 548, 'icon 拉活 UV': 236, 'push 拉活 UV': 122, '端外 H5 拉活 UV': 94, '次日留存': '39%', 'app 人均使用时长': 6.8, '注册账号用户数': 342, '关注专题次数': 196, '关注专题 UV': 108, '被关注专题数': 84, '创建专题数量': 74, '创建专题 UV': 52, '入库新闻数': 1270, 'push 发送量': 10500, 'push 发送用户数': 2040 },
+      { '日期': '2026-07-17', '日活': 1218, '冷启 UV': 560, 'icon 拉活 UV': 248, 'push 拉活 UV': 138, '端外 H5 拉活 UV': 106, '次日留存': '42%', 'app 人均使用时长': 7.1, '注册账号用户数': 360, '关注专题次数': 218, '关注专题 UV': 121, '被关注专题数': 95, '创建专题数量': 82, '创建专题 UV': 58, '入库新闻数': 1390, 'push 发送量': 11200, 'push 发送用户数': 2180 },
+      { '日期': '2026-07-18', '日活': 1116, '冷启 UV': 506, 'icon 拉活 UV': 231, 'push 拉活 UV': 101, '端外 H5 拉活 UV': 98, '次日留存': '37%', 'app 人均使用时长': 6.5, '注册账号用户数': 335, '关注专题次数': 184, '关注专题 UV': 103, '被关注专题数': 89, '创建专题数量': 70, '创建专题 UV': 49, '入库新闻数': 1218, 'push 发送量': 10800, 'push 发送用户数': 2060 },
+      { '日期': '2026-07-19', '日活': 1290, '冷启 UV': 612, 'icon 拉活 UV': 260, 'push 拉活 UV': 144, '端外 H5 拉活 UV': 112, '次日留存': '44%', 'app 人均使用时长': 7.4, '注册账号用户数': 386, '关注专题次数': 248, '关注专题 UV': 132, '被关注专题数': 106, '创建专题数量': 96, '创建专题 UV': 66, '入库新闻数': 1510, 'push 发送量': 12000, 'push 发送用户数': 2300 },
+      { '日期': '2026-07-20', '日活': 1368, '冷启 UV': 640, 'icon 拉活 UV': 286, 'push 拉活 UV': 166, '端外 H5 拉活 UV': 119, '次日留存': '45%', 'app 人均使用时长': 7.8, '注册账号用户数': 408, '关注专题次数': 276, '关注专题 UV': 148, '被关注专题数': 114, '创建专题数量': 108, '创建专题 UV': 74, '入库新闻数': 1640, 'push 发送量': 12600, 'push 发送用户数': 2420 },
+      { '日期': '2026-07-21', '日活': 1312, '冷启 UV': 606, 'icon 拉活 UV': 271, 'push 拉活 UV': 151, '端外 H5 拉活 UV': 117, '次日留存': '41%', 'app 人均使用时长': 7.0, '注册账号用户数': 392, '关注专题次数': 254, '关注专题 UV': 139, '被关注专题数': 110, '创建专题数量': 99, '创建专题 UV': 69, '入库新闻数': 1585, 'push 发送量': 12400, 'push 发送用户数': 2380 }
+    ];
+
+    const builtInDatasets = {
+      path: { label: '用户路径数据', rows: samplePathData, source: '内置虚构用户路径示例' },
+      event: { label: '行为埋点数据', rows: sampleEventData, source: '内置虚构行为事件示例' },
+      survey: { label: '问卷反馈数据', rows: sampleSurveyData, source: '内置虚构问卷反馈示例' },
+      daily: { label: '核心指标日报数据', rows: sampleDailyData, source: '内置虚构指标日报示例' }
+    };
+
+    const state = {
+      rawRows: samplePathData,
+      mode: 'path',
+      sourceLabel: '内置虚构用户路径示例',
+      headers: pathAllFields,
+      sourceFieldSet: new Set(pathAllFields),
+      fieldReport: { recognized: pathAllFields, missing: [], autoFilled: [], unavailable: [] },
+      activeTab: 'all',
+      filters: Object.fromEntries(pathFilterFields.map((field) => [field, ''])),
+      previewAllFields: false,
+      anonymousIdMap: new Map(),
+      crossRow: 'user_type',
+      crossCol: 'issue_type'
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+    const toBool = (value) => {
+      if (typeof value === 'boolean') return value;
+      if (typeof value === 'number') return value === 1;
+      const normalized = String(value ?? '').trim().toLowerCase();
+      return ['1', 'true', 'yes', 'y', '是', '已完成', '完成', '开启', '启用'].includes(normalized);
+    };
+    const toNumber = (value) => {
+      if (value === null || value === undefined || value === '') return 0;
+      const cleaned = String(value).replace(/%|,/g, '').trim();
+      const num = Number(cleaned);
+      return Number.isFinite(num) ? num : 0;
+    };
+    const percentNumber = (value, total) => total ? (value / total) * 100 : 0;
+    const formatPercent = (value, total) => total ? `${percentNumber(value, total).toFixed(1)}%` : '0.0%';
+    const formatMaybePercent = (value) => {
+      if (value === null || value === undefined || value === '') return '暂无数据';
+      const raw = String(value).trim();
+      if (raw.includes('%')) return raw;
+      const num = toNumber(raw);
+      if (num <= 1 && num > 0) return `${(num * 100).toFixed(1)}%`;
+      return `${num.toFixed(1)}%`;
+    };
+    const formatNumber = (value, digits = 1) => Number(value || 0).toFixed(digits);
+    const unique = (items) => [...new Set(items.filter((item) => item !== null && item !== undefined && String(item).trim() !== '').map((item) => String(item).trim()))];
+    const countByValues = (values) => values.reduce((acc, value) => {
+      const key = String(value ?? '').trim() || '未填写';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+    const countBy = (rows, field) => countByValues(rows.map((row) => displayValue(row, field)));
+    const topEntry = (obj) => Object.entries(obj).sort((a, b) => b[1] - a[1])[0] || ['暂无', 0];
+    const isPrivateField = (field) => privateFieldPatterns.some((pattern) => pattern.test(String(field)));
+    const isIdentifierField = (field) => identifierFieldPatterns.some((pattern) => pattern.test(String(field)));
+    const safeHeaders = (headers) => headers.filter((field) => !isPrivateField(field) || isIdentifierField(field));
+    const sensitiveHeaders = (headers) => headers.filter((field) => isPrivateField(field));
+    const anonymizeIdentifier = (value) => {
+      const raw = String(value ?? '').trim() || 'unknown';
+      if (!state.anonymousIdMap.has(raw)) {
+        state.anonymousIdMap.set(raw, `U${String(state.anonymousIdMap.size + 1).padStart(3, '0')}`);
+      }
+      return state.anonymousIdMap.get(raw);
+    };
+    const splitMulti = (value) => {
+      const text = String(value ?? '').trim();
+      if (!text) return ['未填写'];
+      return text.split(/[;,，；、|/]/).map((item) => item.trim()).filter(Boolean);
+    };
+    const normalizeHeader = (header) => String(header ?? '').replace(/^\uFEFF/, '').trim();
+
+    function getHeaders(rows) {
+      return Object.keys(rows[0] || {}).map(normalizeHeader);
+    }
+
+    function hasSourceField(field) {
+      return state.sourceFieldSet.has(field);
+    }
+
+    function normalizeOptionalText(record, field, fallback) {
+      return hasSourceField(field) ? (String(record[field] ?? '').trim() || fallback) : fallback;
+    }
+
+    function normalizeOptionalBoolean(record, field) {
+      return hasSourceField(field) ? toBool(record[field]) : null;
+    }
+
+    function normalizeOptionalNumber(record, field) {
+      return hasSourceField(field) ? toNumber(record[field]) : null;
+    }
+
+    function normalizePathRecord(record) {
+      return {
+        user_id: String(record.user_id ?? '').trim(),
+        registered: toBool(record.registered),
+        browsed_intro: toBool(record.browsed_intro),
+        created_topic: toBool(record.created_topic),
+        viewed_ai_summary: toBool(record.viewed_ai_summary),
+        completed_core_action: toBool(record.completed_core_action),
+        user_type: normalizeOptionalText(record, 'user_type', '未分类用户'),
+        source_channel: normalizeOptionalText(record, 'source_channel', '未知来源'),
+        enabled_reminder: normalizeOptionalBoolean(record, 'enabled_reminder'),
+        active_days: normalizeOptionalNumber(record, 'active_days'),
+        topic_count: normalizeOptionalNumber(record, 'topic_count'),
+        faq_viewed: normalizeOptionalBoolean(record, 'faq_viewed'),
+        prompt_viewed: normalizeOptionalBoolean(record, 'prompt_viewed'),
+        returned_7d: normalizeOptionalBoolean(record, 'returned_7d'),
+        use_scene: normalizeOptionalText(record, 'use_scene', '未填写'),
+        function_need: normalizeOptionalText(record, 'function_need', '未填写'),
+        pay_willingness: normalizeOptionalText(record, 'pay_willingness', '暂无付费意向字段'),
+        price_acceptance: normalizeOptionalText(record, 'price_acceptance', '暂无付费意向字段'),
+        feedback: normalizeOptionalText(record, 'feedback', ''),
+        issue_type: normalizeOptionalText(record, 'issue_type', '未标注问题')
+      };
+    }
+
+    function displayValue(row, field) {
+      const value = row[field];
+      if (typeof value === 'boolean') return value ? '是' : '否';
+      if (value === null || value === undefined || value === '') return '未填写';
+      return String(value);
+    }
+
+    function displayPreviewValue(row, field) {
+      if (isIdentifierField(field)) return anonymizeIdentifier(row[field]);
+      return displayValue(row, field);
+    }
+
+    function parseDelimited(text) {
+      const firstLine = String(text).split(/\r?\n/).find((line) => line.trim()) || '';
+      const delimiters = [',', '\t', ';'];
+      const delimiter = delimiters
+        .map((char) => [char, (firstLine.match(new RegExp(char === '\t' ? '\\t' : `\\${char}`, 'g')) || []).length])
+        .sort((a, b) => b[1] - a[1])[0][0];
+      const rows = [];
+      let row = [];
+      let cell = '';
+      let quoted = false;
+      const source = String(text).replace(/\r\n/g, '\n');
+
+      for (let i = 0; i < source.length; i += 1) {
+        const char = source[i];
+        const next = source[i + 1];
+        if (char === '"' && quoted && next === '"') {
+          cell += '"';
+          i += 1;
+        } else if (char === '"') {
+          quoted = !quoted;
+        } else if (char === delimiter && !quoted) {
+          row.push(cell.trim());
+          cell = '';
+        } else if (char === '\n' && !quoted) {
+          row.push(cell.trim());
+          if (row.some((item) => item !== '')) rows.push(row);
+          row = [];
+          cell = '';
+        } else {
+          cell += char;
+        }
+      }
+      row.push(cell.trim());
+      if (row.some((item) => item !== '')) rows.push(row);
+      if (!rows.length) return [];
+
+      const headers = rows[0].map(normalizeHeader);
+      return rows.slice(1).map((values) => headers.reduce((record, header, index) => {
+        record[header] = values[index] ?? '';
+        return record;
+      }, {}));
+    }
+
+    function findField(headers, aliases) {
+      const normalized = headers.map((field) => ({ raw: field, compact: String(field).replace(/\s+/g, '').toLowerCase() }));
+      for (const alias of aliases) {
+        const aliasCompact = String(alias).replace(/\s+/g, '').toLowerCase();
+        const exact = normalized.find((item) => item.compact === aliasCompact);
+        if (exact) return exact.raw;
+      }
+      for (const alias of aliases) {
+        const aliasCompact = String(alias).replace(/\s+/g, '').toLowerCase();
+        const partial = normalized.find((item) => item.compact.includes(aliasCompact) || aliasCompact.includes(item.compact));
+        if (partial) return partial.raw;
+      }
+      return null;
+    }
+
+    function detectMode(headers) {
+      const headerSet = new Set(headers);
+      const hasPath = pathRequiredFields.every((field) => headerSet.has(field));
+      const distinctField = findField(headers, ['Person.distinct_id', 'distinct_id']);
+      const eventField = findField(headers, ['event']);
+      const timeField = findField(headers, ['timestamp', 'time', '时间']);
+      const hasEvent = Boolean(distinctField && eventField && timeField);
+      const dailyScore = ['日期', '日活', '冷启 UV', 'icon 拉活 UV', 'push 拉活 UV', '端外 H5 拉活 UV', '次日留存', 'app 人均使用时长', '注册账号用户数', '关注专题次数', '关注专题 UV', '被关注专题数', '创建专题数量', '创建专题 UV', '入库新闻数', 'push 发送量', 'push 发送用户数']
+        .filter((field) => findDailyField(headers, field)).length;
+      const surveyScore = ['年龄段', '职业', '所在行业', '使用情况', '使用体验评价', '使用中不顺的地方', '最初使用原因', '最有价值能力', '是否愿意付费', '价格接受度', '付费犹豫原因', '最需要优先改进的一点']
+        .filter((field) => findField(headers, [field])).length;
+
+      if (hasPath) return 'path';
+      if (hasEvent) return 'event';
+      if (dailyScore >= 4 && findField(headers, ['日期'])) return 'daily';
+      if (surveyScore >= 3) return 'survey';
+      return 'unknown';
+    }
+
+    function modeName(mode) {
+      return {
+        path: '用户路径数据',
+        event: '行为埋点数据',
+        survey: '问卷反馈数据',
+        daily: '核心指标日报数据',
+        unknown: '未识别数据'
+      }[mode] || '未识别数据';
+    }
+
+    function buildFieldReport(headers, mode) {
+      const headerSet = new Set(headers);
+      const missing = [];
+      const autoFilled = [];
+      const unavailable = [];
+
+      if (mode === 'path') {
+        pathAllFields.forEach((field) => {
+          if (!headerSet.has(field)) missing.push(field);
+        });
+        pathOptionalFields.forEach((field) => {
+          if (!headerSet.has(field)) {
+            if (field === 'source_channel') autoFilled.push('source_channel → 未知来源');
+            else if (field === 'user_type') autoFilled.push('user_type → 未分类用户');
+            else if (field === 'issue_type') autoFilled.push('issue_type → 未标注问题');
+            else if (field === 'pay_willingness' || field === 'price_acceptance') autoFilled.push(`${field} → 暂无付费意向字段`);
+            else if (pathBooleanOptionalFields.includes(field) || pathNumberOptionalFields.includes(field)) autoFilled.push(`${field} → 暂无数据`);
+            else autoFilled.push(`${field} → 未填写`);
+          }
+        });
+        if (!headerSet.has('issue_type')) unavailable.push('问题标签归因精细分析');
+        if (!headerSet.has('pay_willingness') || !headerSet.has('price_acceptance')) unavailable.push('商业化意向分析');
+        ['enabled_reminder', 'faq_viewed', 'prompt_viewed', 'returned_7d', 'active_days', 'topic_count'].forEach((field) => {
+          if (!headerSet.has(field)) unavailable.push(`${field} 辅助指标`);
+        });
+      } else if (mode === 'event') {
+        ['Person.distinct_id / distinct_id', 'event', 'timestamp'].forEach((field) => {
+          const aliases = field.includes('distinct') ? ['Person.distinct_id', 'distinct_id'] : [field];
+          if (!findField(headers, aliases)) missing.push(field);
+        });
+        unavailable.push('用户级核心路径漏斗', 'user_type × issue_type 问题交叉分析');
+      } else if (mode === 'survey') {
+        ['年龄段', '职业 / 所在行业', '使用情况', '使用体验评价', '使用中不顺的地方', '是否愿意付费', '价格接受度'].forEach((field) => {
+          if (!findSurveyField(headers, field)) missing.push(field);
+        });
+        unavailable.push('用户级核心路径漏斗', '行为埋点活跃趋势', '日报聚合指标趋势');
+      } else if (mode === 'daily') {
+        ['日期', '日活', '次日留存', '创建专题 UV', '关注专题 UV', 'push 拉活 UV', 'push 发送用户数'].forEach((field) => {
+          if (!findDailyField(headers, field)) missing.push(field);
+        });
+        unavailable.push('用户级核心路径漏斗', '用户分群明细', 'user_type × issue_type 交叉分析');
+      } else {
+        unavailable.push('当前数据字段不足，已展示可分析部分，缺失字段对应模块已自动隐藏或标记为暂无数据');
+      }
+
+      return { recognized: headers, missing, autoFilled, unavailable };
+    }
+
+    function applyUploadedRows(rows, label) {
+      if (!rows.length) {
+        $('dataStatus').textContent = '上传失败：文件没有可用数据，请检查表头和数据行。';
+        return;
+      }
+      const headers = getHeaders(rows);
+      const mode = detectMode(headers);
+      state.rawRows = rows;
+      state.mode = mode;
+      state.sourceLabel = label;
+      state.headers = headers;
+      state.sourceFieldSet = new Set(headers.filter((field) => pathAllFields.includes(field)));
+      state.fieldReport = buildFieldReport(headers, mode);
+      state.activeTab = 'all';
+      state.filters = Object.fromEntries(pathFilterFields.map((field) => [field, '']));
+      state.previewAllFields = false;
+      state.anonymousIdMap = new Map();
+      setDefaultCross(mode);
+      $('dataStatus').textContent = `当前使用：${label}，共 ${rows.length} 条。`;
+      renderAll();
+    }
+
+    function resetToSample() {
+      switchBuiltInMode('path');
+    }
+
+    function switchBuiltInMode(mode) {
+      const dataset = builtInDatasets[mode] || builtInDatasets.path;
+      const headers = mode === 'path' ? pathAllFields : getHeaders(dataset.rows);
+      state.rawRows = dataset.rows;
+      state.mode = mode;
+      state.sourceLabel = dataset.source;
+      state.headers = headers;
+      state.sourceFieldSet = new Set(headers.filter((field) => pathAllFields.includes(field)));
+      state.fieldReport = buildFieldReport(headers, mode);
+      state.activeTab = 'all';
+      state.filters = Object.fromEntries(pathFilterFields.map((field) => [field, '']));
+      state.previewAllFields = false;
+      state.anonymousIdMap = new Map();
+      setDefaultCross(mode);
+      if ($('fileInput')) $('fileInput').value = '';
+      $('dataStatus').textContent = `当前使用：${dataset.source}，共 ${dataset.rows.length} 条。`;
+      renderAll();
+    }
+
+    function getPathRows() {
+      if (state.mode !== 'path') return [];
+      state.sourceFieldSet = new Set(state.headers.filter((field) => pathAllFields.includes(field)));
+      return state.rawRows.map(normalizePathRecord);
+    }
+
+    function applyStatusTab(rows) {
+      if (state.activeTab === 'completed') return rows.filter((row) => row.completed_core_action);
+      if (state.activeTab === 'incomplete') return rows.filter((row) => row.registered && !row.completed_core_action);
+      if (state.activeTab === 'highPay') return rows.filter((row) => row.pay_willingness === '高');
+      if (state.activeTab === 'pendingIssue') return rows.filter((row) => !row.issue_type || row.issue_type === '未标注问题');
+      return rows;
+    }
+
+    function getFilteredPathRows() {
+      const tabRows = applyStatusTab(getPathRows());
+      return tabRows.filter((row) => pathFilterFields.every((field) => !state.filters[field] || displayValue(row, field) === state.filters[field]));
+    }
+
+    function computePathStats(rows) {
+      const total = rows.length;
+      const registered = rows.filter((row) => row.registered).length;
+      const browsedIntro = rows.filter((row) => row.registered && row.browsed_intro).length;
+      const createdTopic = rows.filter((row) => row.registered && row.created_topic).length;
+      const aiSummary = rows.filter((row) => row.registered && row.created_topic && row.viewed_ai_summary).length;
+      const completedCore = rows.filter((row) => row.registered && row.completed_core_action).length;
+      const returned7d = hasSourceField('returned_7d') ? rows.filter((row) => row.registered && row.returned_7d).length : null;
+      const enabledReminder = hasSourceField('enabled_reminder') ? rows.filter((row) => row.registered && row.enabled_reminder).length : null;
+      const highPay = hasSourceField('pay_willingness') ? rows.filter((row) => row.registered && row.pay_willingness === '高').length : null;
+      const activeDaySum = hasSourceField('active_days') ? rows.reduce((sum, row) => sum + (row.active_days || 0), 0) : null;
+      const topicSum = hasSourceField('topic_count') ? rows.reduce((sum, row) => sum + (row.topic_count || 0), 0) : null;
+      const faqViewed = hasSourceField('faq_viewed') ? rows.filter((row) => row.registered && row.faq_viewed).length : null;
+      const promptViewed = hasSourceField('prompt_viewed') ? rows.filter((row) => row.registered && row.prompt_viewed).length : null;
+      const funnelSteps = [
+        { key: 'registered', label: '注册', count: registered, reason: '样本进入路径起点' },
+        { key: 'browsed_intro', label: '浏览产品介绍', count: rows.filter((row) => row.registered && row.browsed_intro).length, reason: '产品定位或价值说明不足' },
+        { key: 'created_topic', label: '创建资讯专题', count: rows.filter((row) => row.registered && row.browsed_intro && row.created_topic).length, reason: '专题价值、入口或模板不清晰' },
+        { key: 'viewed_ai_summary', label: '查看 AI 聚合结果', count: rows.filter((row) => row.registered && row.browsed_intro && row.created_topic && row.viewed_ai_summary).length, reason: '结果入口、生成等待或说明不足' },
+        { key: 'completed_core_action', label: '完成首次核心体验', count: rows.filter((row) => row.registered && row.browsed_intro && row.created_topic && row.viewed_ai_summary && row.completed_core_action).length, reason: '未形成保存、提醒、复访等完整闭环' }
+      ];
+      const dropoffs = funnelSteps.slice(1).map((step, index) => {
+        const previous = funnelSteps[index];
+        const lost = Math.max(previous.count - step.count, 0);
+        return { from: previous.label, to: step.label, key: `${previous.key}->${step.key}`, lost, previous: previous.count, current: step.count, rate: previous.count ? lost / previous.count : 0, reason: step.reason };
+      });
+      const maxDropoff = [...dropoffs].sort((a, b) => b.lost - a.lost || b.rate - a.rate)[0] || null;
+      return {
+        total,
+        registered,
+        browsedIntro,
+        createdTopic,
+        aiSummary,
+        completedCore,
+        returned7d,
+        enabledReminder,
+        highPay,
+        activeDaySum,
+        topicSum,
+        faqViewed,
+        promptViewed,
+        avgActiveDays: hasSourceField('active_days') && total ? activeDaySum / total : null,
+        topicPerRegistered: hasSourceField('topic_count') && registered ? topicSum / registered : null,
+        funnelSteps,
+        dropoffs,
+        maxDropoff
+      };
+    }
+
+    function renderModeStatus() {
+      const mode = modeName(state.mode);
+      $('modeBadge').textContent = `当前模式：${mode}`;
+      const hasMissing = state.fieldReport.missing.length || state.mode === 'unknown';
+      $('modeCompleteness').className = `badge border ${hasMissing ? 'border-orange/30 bg-orange/10 text-orange' : 'border-neutralLine bg-neutralSoft text-primary'}`;
+      $('modeCompleteness').textContent = hasMissing ? '字段不足，展示可分析部分' : '字段完整';
+      $('suggestionModeBadge').textContent = mode;
+    }
+
+    function renderModeSwitch() {
+      $('modeSwitch').innerHTML = Object.entries(builtInDatasets).map(([mode, dataset]) => {
+        const active = state.mode === mode && state.rawRows === dataset.rows;
+        return `
+          <button type="button" data-built-in-mode="${mode}" class="rounded-lg border px-3 py-2 text-sm font-semibold transition ${active ? 'border-primary bg-primary text-white shadow-soft' : 'border-line bg-white text-bodyText hover:border-neutralLine hover:text-primary'}">
+            ${escapeHTML(dataset.label)}
+          </button>
+        `;
+      }).join('');
+      document.querySelectorAll('[data-built-in-mode]').forEach((button) => {
+        button.addEventListener('click', () => switchBuiltInMode(button.dataset.builtInMode));
+      });
+    }
+
+    function moduleApplicability(mode = state.mode) {
+      const always = ['overview', 'metricCards', 'data-security', 'data-quality', 'suggestions', 'data-preview'];
+      const byMode = {
+        path: ['status-tabs', 'filters', 'funnel', 'activation', 'segments', 'cross-analysis', 'issues', 'issue-category'],
+        event: ['event-data'],
+        daily: ['daily-metrics'],
+        survey: ['survey-feedback', 'cross-analysis', 'issues'],
+        unknown: []
+      };
+      return new Set([...always, ...(byMode[mode] || [])]);
+    }
+
+    function updateModuleVisibility() {
+      const applicable = moduleApplicability();
+      document.querySelectorAll('.module[id], #issue-category').forEach((section) => {
+        if (section.id === 'overview') return;
+        section.classList.toggle('hidden', !applicable.has(section.id));
+      });
+      document.querySelectorAll('#sidebarNav a').forEach((link) => {
+        const isApplicable = applicable.has(link.dataset.target);
+        link.classList.toggle('nav-item-disabled', !isApplicable);
+        link.setAttribute('aria-disabled', String(!isApplicable));
+      });
+    }
+
+    let modeHintTimer = null;
+    function showModeHint(targetId) {
+      const targetText = document.querySelector(`#sidebarNav a[data-target="${targetId}"] span:last-child`)?.textContent || '当前模块';
+      const hint = $('modeHint');
+      hint.innerHTML = `
+        <p class="font-bold text-ink">当前模块不适用于当前数据模式</p>
+        <p class="mt-1 text-xs leading-5 text-muted">${escapeHTML(targetText)} 暂不适用于“${modeName(state.mode)}”，请切换到对应数据模式查看。</p>
+      `;
+      hint.classList.remove('hidden');
+      clearTimeout(modeHintTimer);
+      modeHintTimer = setTimeout(() => hint.classList.add('hidden'), 2800);
+    }
+
+    function renderFieldReport() {
+      const report = state.fieldReport;
+      const list = (items, empty) => items.length ? items.map(escapeHTML).join('、') : empty;
+      $('fieldReport').innerHTML = `
+        <div class="mb-2 flex items-center justify-between gap-2">
+          <p class="text-sm font-bold text-ink">字段检测结果</p>
+          <span class="badge border border-neutralLine bg-neutralSoft text-primary">${modeName(state.mode)}</span>
+        </div>
+        <div class="grid gap-2">
+          ${(report.missing.length || state.mode === 'unknown') ? '<p class="rounded-lg border border-orange/20 bg-orange/10 px-3 py-2 text-bodyText">当前数据字段不足，已展示可分析部分，缺失字段对应模块已自动隐藏或标记为暂无数据。</p>' : ''}
+          <p><span class="font-semibold text-ink">已识别字段：</span>${list(report.recognized, '暂无')}</p>
+          <p><span class="font-semibold text-ink">缺失字段：</span>${list(report.missing, '无')}</p>
+          <p><span class="font-semibold text-ink">已自动补全字段：</span>${list(report.autoFilled, '无')}</p>
+          <p><span class="font-semibold text-ink">暂不可分析模块：</span>${list(report.unavailable, '无')}</p>
+        </div>
+      `;
+    }
+
+    function inactiveModule(text) {
+      return `<div class="w-fit max-w-full rounded-lg border border-dashed border-line bg-slate-50 px-3 py-2 text-xs leading-5 text-muted">${escapeHTML(text)}</div>`;
+    }
+
+    function getIdentifierFieldForMode() {
+      if (state.mode === 'path') return hasSourceField('user_id') ? 'user_id' : null;
+      if (state.mode === 'event') return eventFieldMap().id;
+      return findField(state.headers, ['user_id', '用户标识', 'Person.distinct_id', 'distinct_id', 'openid', 'unionid']);
+    }
+
+    function getAnalysisRowsForQuality() {
+      return getCurrentRowsForPreview();
+    }
+
+    function getNullRatio(rows, headers) {
+      const totalCells = rows.length * Math.max(headers.length, 1);
+      if (!totalCells) return 0;
+      const emptyCells = rows.reduce((sum, row) => sum + headers.filter((field) => String(row[field] ?? '').trim() === '').length, 0);
+      return emptyCells / totalCells;
+    }
+
+    function getDuplicateUserCount(rows) {
+      const idField = getIdentifierFieldForMode();
+      if (!idField) return '暂无用户标识字段';
+      const counts = countByValues(rows.map((row) => row[idField]).filter((value) => String(value ?? '').trim() !== ''));
+      return Object.values(counts).filter((count) => count > 1).length;
+    }
+
+    function getApplicableModuleLabels() {
+      const labels = {
+        overview: '顶部说明',
+        metricCards: '核心指标卡片',
+        'data-security': '数据安全检测',
+        'data-quality': '数据质量检查',
+        'status-tabs': '用户状态 Tab',
+        filters: '用户分层筛选器',
+        funnel: '主路径漏斗',
+        activation: '用户激活与留存意向分析',
+        segments: '用户分群分析',
+        'cross-analysis': '交叉分析与显著性检验',
+        'event-data': '行为埋点分析',
+        'daily-metrics': '核心指标日报分析',
+        'survey-feedback': '问卷反馈分析',
+        issues: '反馈问题分类',
+        'issue-category': '运营 / 产品问题分类',
+        suggestions: '建议动作',
+        'data-preview': '数据预览表'
+      };
+      const applicable = moduleApplicability();
+      return {
+        applicable: [...applicable].map((id) => labels[id] || id),
+        unavailable: Object.entries(labels)
+          .filter(([id]) => !applicable.has(id))
+          .map(([, label]) => label)
+      };
+    }
+
+    function renderDataSecurity() {
+      const headers = state.headers || [];
+      const sensitive = sensitiveHeaders(headers);
+      const safe = safeHeaders(headers);
+      const hasSensitive = sensitive.length > 0;
+      $('securityContent').innerHTML = `
+        <div class="grid gap-4 xl:grid-cols-[1fr_1fr]">
+          <div class="rounded-xl border ${hasSensitive ? 'border-orange/20 bg-orange/10' : 'border-altLine bg-altSoft'} p-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p class="text-sm font-bold text-ink">敏感字段检测</p>
+                <p class="mt-1 text-xs leading-5 text-muted">检测范围：${sensitiveFieldKeywords.map(escapeHTML).join('、')}</p>
+              </div>
+              <span class="badge ${hasSensitive ? 'bg-orange text-white' : 'bg-altText text-white'}">${hasSensitive ? `${sensitive.length} 个敏感字段` : '未发现敏感字段'}</span>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-2">
+              ${hasSensitive ? sensitive.map((field) => `<span class="badge bg-white text-orange">${escapeHTML(field)}</span>`).join('') : '<span class="badge bg-white text-altText">当前未匹配到预设敏感字段</span>'}
+            </div>
+            <p class="mt-3 text-xs leading-5 text-bodyText">数据预览表默认隐藏敏感字段；如分析需要展示用户标识，会自动转换为 U001、U002、U003 形式的匿名 ID。</p>
+          </div>
+          <div class="rounded-xl border border-neutralLine bg-neutralSoft p-4">
+            <p class="text-sm font-bold text-ink">本地安全模式</p>
+            <p class="mt-2 text-xs leading-5 text-bodyText">当前工具运行在本地浏览器中，上传文件仅在本地解析，不上传服务器，不连接数据库，不调用外部 API。</p>
+            <div class="mt-4 rounded-lg border border-line bg-white p-3">
+              <p class="text-xs font-bold text-ink">数据接入方式参考</p>
+              <p class="mt-2 text-xs leading-5 text-muted">行为埋点 / 问卷 / 日报 → 数据清洗与脱敏 → 聚合分析表 → Dashboard API → 前端看板展示</p>
+            </div>
+          </div>
+        </div>
+        <div class="mt-4 rounded-xl border border-line bg-slate-50 p-4">
+          <p class="text-sm font-bold text-ink">示例与上传数据说明</p>
+          <p class="mt-2 text-xs leading-5 text-muted">本工具用于演示运营数据初步探索、路径分析、反馈分类和复盘方法。内置示例结果与实习期汇总分别呈现；上传后的结果只描述当前文件，不自动证明某篇内容、达人合作或A/B测试带来的增长。</p>
+        </div>
+      `;
+    }
+
+    function renderDataQuality() {
+      const rows = getAnalysisRowsForQuality();
+      const headers = state.headers || getHeaders(rows);
+      const modules = getApplicableModuleLabels();
+      const nullRatio = getNullRatio(rows, headers);
+      const duplicateUsers = getDuplicateUserCount(rows);
+      const cards = [
+        { label: '总行数', value: rows.length, formula: 'COUNT(rows)', note: '当前筛选或当前模式数据量' },
+        { label: '总字段数', value: headers.length, formula: 'COUNT(fields)', note: '上传文件或内置数据字段数量' },
+        { label: '缺失字段', value: state.fieldReport.missing.length, formula: 'MISSING(fields)', note: state.fieldReport.missing.length ? state.fieldReport.missing.join('、') : '无' },
+        { label: '空值比例', value: `${(nullRatio * 100).toFixed(1)}%`, formula: 'EMPTY(cells) / ALL(cells)', note: '基于当前可读取字段粗略计算' },
+        { label: '重复用户数', value: duplicateUsers, formula: 'DUPLICATE(user_id)', note: '按当前模式可识别用户字段计算' },
+        { label: '可分析模块数', value: modules.applicable.length, formula: 'AVAILABLE(modules)', note: '当前数据模式下可展开模块' }
+      ];
+      $('qualityContent').innerHTML = `
+        <div class="metric-grid">${cards.map(renderMetricCard).join('')}</div>
+        <div class="mt-5 grid gap-4 xl:grid-cols-2">
+          <div class="rounded-xl border border-neutralLine bg-neutralSoft p-4">
+            <p class="text-sm font-bold text-ink">可分析模块</p>
+            <div class="mt-3 flex flex-wrap gap-2">${modules.applicable.map((item) => `<span class="badge bg-white text-primary">${escapeHTML(item)}</span>`).join('')}</div>
+          </div>
+          <div class="rounded-xl border border-line bg-slate-50 p-4">
+            <p class="text-sm font-bold text-ink">不可分析模块及原因</p>
+            <div class="mt-3 grid gap-2">
+              ${modules.unavailable.length ? modules.unavailable.map((item) => `<p class="rounded-lg bg-white px-3 py-2 text-xs leading-5 text-muted">${escapeHTML(item)}：当前数据模式缺少所需明细字段或聚合口径。</p>`).join('') : '<p class="rounded-lg bg-white px-3 py-2 text-xs leading-5 text-muted">当前模式下核心模块均可分析。</p>'}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderStatusTabs() {
+      const pathRows = getPathRows();
+      const counts = {
+        all: pathRows.length,
+        completed: pathRows.filter((row) => row.completed_core_action).length,
+        incomplete: pathRows.filter((row) => row.registered && !row.completed_core_action).length,
+        highPay: pathRows.filter((row) => row.pay_willingness === '高').length,
+        pendingIssue: pathRows.filter((row) => !row.issue_type || row.issue_type === '未标注问题').length
+      };
+      $('tabStatus').textContent = state.mode === 'path' ? `当前分层：${statusTabs.find((tab) => tab.key === state.activeTab)?.label || '全部用户'}` : '仅用户路径数据适用';
+      $('statusTabs').innerHTML = statusTabs.map((tab) => {
+        const active = state.activeTab === tab.key && state.mode === 'path';
+        const disabled = state.mode !== 'path';
+        return `
+          <button type="button" data-tab="${tab.key}" class="rounded-lg border px-3 py-2 text-sm font-semibold transition ${active ? 'border-primary bg-primary text-white shadow-soft' : 'border-line bg-white text-bodyText hover:border-neutralLine hover:bg-neutralSoft'} ${disabled ? 'cursor-not-allowed opacity-50' : ''}" ${disabled ? 'disabled' : ''}>
+            ${tab.label}<span class="ml-2 text-xs ${active ? 'text-white/80' : 'text-muted'}">${counts[tab.key] || 0}</span>
+          </button>
+        `;
+      }).join('');
+      document.querySelectorAll('[data-tab]').forEach((button) => {
+        button.addEventListener('click', () => {
+          state.activeTab = button.dataset.tab;
+          renderAll();
+        });
+      });
+    }
+
+    function renderFilters() {
+      if (state.mode !== 'path') {
+        $('filterControls').innerHTML = inactiveModule('当前数据类型不适用用户分层筛选器。上传用户路径数据后，可按用户类型、来源渠道、付费意愿、问题类型和使用场景筛选。');
+        $('filterStatus').textContent = '当前筛选结果模拟 SQL WHERE 条件筛选与 GROUP BY 分组统计。';
+        $('filterInsight').textContent = '当前数据类型不适用用户路径筛选结论。';
+        return;
+      }
+      const baseRows = applyStatusTab(getPathRows());
+      $('filterControls').innerHTML = pathFilterFields.map((field) => {
+        const values = unique(baseRows.map((row) => displayValue(row, field)));
+        return `
+          <label class="grid gap-1 text-xs font-semibold text-muted">${fieldLabels[field]}
+            <select data-filter="${field}" class="rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium text-bodyText outline-none transition focus:border-primary">
+              <option value="">全部${fieldLabels[field]}</option>
+              ${values.map((value) => `<option value="${escapeHTML(value)}" ${state.filters[field] === value ? 'selected' : ''}>${escapeHTML(value)}</option>`).join('')}
+            </select>
+          </label>
+        `;
+      }).join('');
+      document.querySelectorAll('[data-filter]').forEach((select) => {
+        select.addEventListener('change', () => {
+          state.filters[select.dataset.filter] = select.value;
+          renderAll();
+        });
+      });
+      const rows = getFilteredPathRows();
+      const stats = computePathStats(rows);
+      const activeEntries = Object.entries(state.filters).filter(([, value]) => value);
+      const whereText = activeEntries.length ? activeEntries.map(([field, value]) => `${fieldLabels[field]} = "${value}"`).join(' AND ') : '未设置筛选条件';
+      $('filterStatus').textContent = `当前筛选结果模拟 SQL WHERE 条件筛选与 GROUP BY 分组统计。WHERE ${whereText}；当前 ${rows.length} / ${getPathRows().length} 条记录。`;
+      $('filterInsight').textContent = buildFilterInsight(stats, rows);
+    }
+
+    function buildFilterInsight(stats, rows) {
+      if (!rows.length) return '当前筛选条件下暂无用户，建议调整筛选条件。';
+      const allStats = computePathStats(getPathRows());
+      const issue = topEntry(countBy(rows, 'issue_type'))[0];
+      const topicRate = percentNumber(stats.createdTopic, stats.registered);
+      const allTopicRate = percentNumber(allStats.createdTopic, allStats.registered);
+      const highPayRate = hasSourceField('pay_willingness') ? percentNumber(stats.highPay, stats.registered) : null;
+      if (topicRate + 5 < allTopicRate) return '当前筛选用户的专题创建率低于整体水平，说明该用户群体可能需要更强的新手引导。';
+      if (highPayRate !== null && highPayRate >= 45) return '当前筛选用户的高付费意愿占比较高，可作为试用转化和会员价值说明的重点人群。';
+      if (['功能理解', '使用场景不清晰', 'Prompt 不会用'].includes(issue)) return '当前筛选用户的问题主要集中在运营可解决问题，建议优先通过教程、FAQ 和场景化内容解决。';
+      if (['入口不明显', '流程复杂', '内容分类不清晰'].includes(issue)) return '当前筛选用户的问题主要集中在入口或流程体验，建议反馈给产品优化首次体验路径。';
+      return '当前筛选用户路径表现相对稳定，可继续观察细分场景下的功能需求与反馈标签。';
+    }
+
+    function renderMetricCards() {
+      if (state.mode !== 'path') {
+        const modeRows = getCurrentRowsForPreview();
+        const cards = [
+          { label: '当前数据模式', value: modeName(state.mode), formula: 'AUTO DETECT', note: state.sourceLabel },
+          { label: '数据行数', value: modeRows.length, formula: 'COUNT(rows)', note: '当前文件可分析记录' },
+          { label: '识别字段数', value: state.headers.length, formula: 'COUNT(fields)', note: '不含自动隐藏隐私字段' },
+          { label: '缺失字段数', value: state.fieldReport.missing.length, formula: 'MISSING(fields)', note: '缺失字段对应模块会降级' },
+          { label: '可预览字段数', value: safeHeaders(state.headers).length, formula: 'SAFE(fields)', note: '已过滤个人信息字段' },
+          { label: '分析状态', value: state.mode === 'unknown' ? '待补充字段' : '已识别', formula: 'MODE STATUS', note: '上传后自动判断数据模式' }
+        ];
+        $('metricCards').innerHTML = cards.map(renderMetricCard).join('');
+        return;
+      }
+      const stats = computePathStats(getFilteredPathRows());
+      const highPayText = hasSourceField('pay_willingness') ? formatPercent(stats.highPay, stats.registered) : '暂无付费意向字段';
+      const cards = [
+        { label: '注册用户数', value: stats.registered, formula: 'COUNT(registered = 1)', note: `${stats.registered} / ${stats.total} 条记录进入注册路径` },
+        { label: '专题创建率', value: formatPercent(stats.createdTopic, stats.registered), formula: 'created_topic / registered', note: `${stats.createdTopic} / ${stats.registered} 人创建资讯专题` },
+        { label: 'AI 聚合结果查看率', value: formatPercent(stats.aiSummary, stats.createdTopic), formula: 'viewed_ai_summary / created_topic', note: `${stats.aiSummary} / ${stats.createdTopic} 人查看 AI 聚合结果` },
+        { label: '首次核心体验完成率', value: formatPercent(stats.completedCore, stats.registered), formula: 'completed_core_action / registered', note: `${stats.completedCore} / ${stats.registered} 人完成首次核心体验` },
+        { label: '最大流失节点', value: stats.maxDropoff ? `${stats.maxDropoff.lost} 人` : '暂无', formula: 'MAX(step_dropoff)', note: stats.maxDropoff ? `${stats.maxDropoff.from} → ${stats.maxDropoff.to}` : '暂无流失节点' },
+        { label: '高付费意愿用户占比', value: highPayText, formula: 'pay_willingness = 高', note: hasSourceField('pay_willingness') ? `${stats.highPay} / ${stats.registered} 人高付费意愿` : 'CSV 未包含 pay_willingness' }
+      ];
+      $('metricCards').innerHTML = cards.map(renderMetricCard).join('');
+    }
+
+    function renderMetricCard(card) {
+      return `
+        <article class="panel metric-card">
+          <p class="metric-title text-sm font-bold text-ink">${escapeHTML(card.label)}</p>
+          <p class="metric-formula mt-2 rounded-md bg-neutralSoft px-2 py-1 text-[11px] font-semibold text-primary">${escapeHTML(card.formula || 'AUTO')}</p>
+          <p class="mt-5 min-h-[44px] text-3xl font-bold tracking-tight text-ink">${escapeHTML(card.value)}</p>
+          <p class="mt-3 border-t border-line pt-3 text-xs leading-5 text-muted">${escapeHTML(card.note)}</p>
+        </article>
+      `;
+    }
+
+    function renderFunnel() {
+      if (state.mode !== 'path') {
+        $('funnelContent').innerHTML = inactiveModule('当前数据类型不适合生成用户级主路径漏斗。上传包含 user_id、registered、browsed_intro、created_topic、viewed_ai_summary、completed_core_action 的用户路径数据后可查看。');
+        $('dropoffBadge').textContent = '当前模式不适用';
+        return;
+      }
+      const stats = computePathStats(getFilteredPathRows());
+      const base = Math.max(stats.funnelSteps[0]?.count || 0, 1);
+      $('dropoffBadge').textContent = stats.maxDropoff ? `最大流失：${stats.maxDropoff.from} → ${stats.maxDropoff.to}` : '暂无流失节点';
+      const steps = stats.funnelSteps.map((step, index) => {
+        const previous = index === 0 ? step.count : stats.funnelSteps[index - 1].count;
+        const lost = index === 0 ? 0 : Math.max(previous - step.count, 0);
+        const isMax = stats.maxDropoff && stats.maxDropoff.to === step.label;
+        return `
+          <article class="min-w-[210px] flex-1 rounded-xl border ${isMax ? 'border-neutralLine bg-neutralSoft' : 'border-line bg-white'} p-4 shadow-soft">
+            <div class="flex items-center justify-between gap-2">
+              <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white">${index + 1}</span>
+              <span class="badge ${isMax ? 'bg-primary text-white' : 'bg-slate-100 text-muted'}">${isMax ? '最大流失节点' : '路径节点'}</span>
+            </div>
+            <h3 class="mt-3 min-h-[42px] text-sm font-bold leading-5 text-ink">${escapeHTML(step.label)}</h3>
+            <p class="mt-2 text-3xl font-bold tracking-tight text-primary">${step.count}</p>
+            <p class="mt-2 text-xs leading-5 text-muted">上一环节转化 ${index === 0 ? formatPercent(step.count, step.count) : formatPercent(step.count, previous)}</p>
+            <p class="text-xs leading-5 text-muted">注册总转化 ${formatPercent(step.count, base)}</p>
+            <p class="text-xs leading-5 text-muted">流失人数 ${lost}</p>
+          </article>
+        `;
+      }).join('<div class="hidden items-center text-2xl font-bold text-slate-300 xl:flex">→</div>');
+
+      $('funnelContent').innerHTML = `
+        <div class="flex gap-3 overflow-x-auto pb-2">${steps}</div>
+        <div class="mt-5 rounded-xl border border-line bg-slate-50 p-4">
+          <p class="text-sm font-bold text-ink">层级路径展示</p>
+          <div class="mt-4 space-y-3">${renderPathTree(stats)}</div>
+        </div>
+      `;
+    }
+
+    function renderPathTree(stats) {
+      return stats.funnelSteps.map((step, index) => {
+        const previous = index === 0 ? step.count : stats.funnelSteps[index - 1].count;
+        const lost = index === 0 ? 0 : Math.max(previous - step.count, 0);
+        const indent = index * 22;
+        const isMax = stats.maxDropoff && stats.maxDropoff.to === step.label;
+        return `
+          <div class="flex items-start gap-3" style="margin-left: ${indent}px">
+            <span class="mt-2 h-px w-5 bg-slate-300"></span>
+            <div class="flex-1 rounded-lg border ${isMax ? 'border-neutralLine bg-neutralSoft' : 'border-line bg-white'} px-3 py-3">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="font-semibold text-ink">${index === 0 ? '' : '└─ '}${escapeHTML(step.label)}</span>
+                <span class="badge bg-white text-primary">${step.count} 人</span>
+                <span class="badge bg-slate-100 text-muted">环节转化 ${index === 0 ? '100.0%' : formatPercent(step.count, previous)}</span>
+                <span class="badge ${isMax ? 'bg-primary text-white' : 'bg-slate-100 text-muted'}">流失 ${lost} 人</span>
+              </div>
+              <p class="mt-2 text-xs leading-5 text-muted">主要流失原因：${escapeHTML(step.reason)}</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderActivation() {
+      if (state.mode !== 'path') {
+        $('activationContent').innerHTML = inactiveModule('当前数据类型不适用用户激活与留存意向分析。行为埋点、问卷反馈和日报数据会在对应模块中展示。');
+        return;
+      }
+      const rows = getFilteredPathRows();
+      const stats = computePathStats(rows);
+      const hasRevenue = hasSourceField('pay_willingness') && hasSourceField('price_acceptance');
+      const priceEntries = hasRevenue ? Object.entries(countBy(rows, 'price_acceptance')).sort((a, b) => b[1] - a[1]) : [];
+      const maxPriceCount = Math.max(...priceEntries.map(([, count]) => count), 1);
+      const metric = (label, value, formula, note) => `
+        <div class="card min-w-[220px] p-4">
+          <p class="metric-title text-sm font-bold text-ink">${escapeHTML(label)}</p>
+          <p class="metric-formula mt-2 rounded-md bg-slate-100 px-2 py-1 text-[11px] font-semibold text-muted">${escapeHTML(formula)}</p>
+          <p class="mt-4 text-2xl font-bold tracking-tight text-ink">${escapeHTML(value)}</p>
+          <p class="mt-2 text-xs leading-5 text-muted">${escapeHTML(note)}</p>
+        </div>
+      `;
+      const activationMetrics = [
+        metric('专题创建率', formatPercent(stats.createdTopic, stats.registered), 'created_topic / registered', `${stats.createdTopic} / ${stats.registered} 人`),
+        metric('AI 聚合结果查看率', formatPercent(stats.aiSummary, stats.createdTopic), 'viewed_ai_summary / created_topic', `${stats.aiSummary} / ${stats.createdTopic} 人`),
+        metric('首次核心体验完成率', formatPercent(stats.completedCore, stats.registered), 'completed_core_action / registered', `${stats.completedCore} / ${stats.registered} 人`)
+      ].join('');
+      const retentionMetrics = [
+        metric('7 日内回访率', hasSourceField('returned_7d') ? formatPercent(stats.returned7d, stats.registered) : '暂无数据', 'returned_7d / registered', hasSourceField('returned_7d') ? `${stats.returned7d} / ${stats.registered} 人` : 'CSV 未包含 returned_7d'),
+        metric('平均活跃天数', hasSourceField('active_days') ? `${formatNumber(stats.avgActiveDays, 1)} 天` : '暂无数据', 'AVG(active_days)', hasSourceField('active_days') ? '基于当前样本 active_days 计算' : 'CSV 未包含 active_days'),
+        metric('人均创建专题数', hasSourceField('topic_count') ? formatNumber(stats.topicPerRegistered, 2) : '暂无数据', 'SUM(topic_count) / registered', hasSourceField('topic_count') ? `${stats.topicSum} 个专题 / ${stats.registered} 人` : 'CSV 未包含 topic_count'),
+        metric('提醒启用率', hasSourceField('enabled_reminder') ? formatPercent(stats.enabledReminder, stats.registered) : '暂无数据', 'enabled_reminder / registered', hasSourceField('enabled_reminder') ? `${stats.enabledReminder} / ${stats.registered} 人` : 'CSV 未包含 enabled_reminder')
+      ].join('');
+      const commercialMetrics = [
+        metric('高付费意愿用户占比', hasRevenue ? formatPercent(stats.highPay, stats.registered) : '暂无付费意向字段', 'pay_willingness = 高', hasRevenue ? `${stats.highPay} / ${stats.registered} 人` : 'CSV 缺少 pay_willingness 或 price_acceptance')
+      ].join('');
+      const priceDist = hasRevenue && priceEntries.length ? priceEntries.map(([price, count]) => `
+        <div class="mb-3 last:mb-0">
+          <div class="mb-1 flex items-center justify-between gap-3 text-xs">
+            <span class="font-bold text-bodyText">${escapeHTML(price)}</span>
+            <span class="text-muted">${count} 人 · ${formatPercent(count, rows.length)}</span>
+          </div>
+          <div class="bar-track h-2"><div class="h-2 rounded-full bg-primary" style="width:${Math.max((count / maxPriceCount) * 100, 8)}%"></div></div>
+        </div>
+      `).join('') : '<p class="text-sm leading-6 text-muted">暂无付费意向字段</p>';
+      $('activationContent').innerHTML = `
+        <div class="grid gap-4 xl:grid-cols-3">
+          <article class="rounded-xl border border-line bg-white p-4"><h3 class="mb-4 text-base font-bold text-ink">激活指标</h3><div class="grid gap-3">${activationMetrics}</div></article>
+          <article class="rounded-xl border border-line bg-white p-4"><h3 class="mb-4 text-base font-bold text-ink">留存意向指标</h3><div class="grid gap-3">${retentionMetrics}</div></article>
+          <article class="rounded-xl border border-line bg-white p-4"><h3 class="mb-4 text-base font-bold text-ink">商业化意向指标</h3><div class="grid gap-3">${commercialMetrics}</div><div class="mt-4 rounded-lg border border-line bg-slate-50 p-4"><p class="mb-3 text-sm font-bold text-ink">价格接受度分布</p>${priceDist}</div></article>
+        </div>
+        <div class="mt-5 rounded-xl border border-neutralLine bg-neutralSoft p-4">
+          <p class="text-sm font-bold text-ink">自动诊断</p>
+          <div class="mt-3 grid gap-2">${buildActivationDiagnosis(rows, stats).map((item) => `<p class="rounded-lg bg-white px-3 py-3 text-sm leading-6 text-bodyText">${escapeHTML(item)}</p>`).join('')}</div>
+        </div>
+      `;
+    }
+
+    function buildActivationDiagnosis(rows, stats) {
+      const insights = [];
+      const topicRate = percentNumber(stats.createdTopic, stats.registered);
+      const summaryRate = percentNumber(stats.aiSummary, stats.createdTopic);
+      const coreRate = percentNumber(stats.completedCore, stats.registered);
+      const returnedRate = hasSourceField('returned_7d') ? percentNumber(stats.returned7d, stats.registered) : null;
+      if (topicRate < 50) insights.push('专题创建率偏低，用户可能没有理解创建专题的价值或操作路径。');
+      if (summaryRate < 60) insights.push('AI 聚合结果查看率偏低，用户可能卡在结果入口、生成等待或功能说明。');
+      if (coreRate < 50) insights.push('首次核心体验完成率偏低，说明用户看到了功能但没有形成完整使用闭环。');
+      if (returnedRate !== null && returnedRate < 40) insights.push('7 日内回访率偏低，用户持续使用动机不足，需要加强提醒、模板和场景价值说明。');
+      if (hasSourceField('pay_willingness') && stats.highPay > 0) {
+        const highRows = rows.filter((row) => row.pay_willingness === '高');
+        const [type, count] = topEntry(countBy(highRows, 'user_type'));
+        insights.push(`高付费意愿用户集中在“${type}”，共 ${count} 人，可优先设计试用转化和会员价值说明。`);
+      } else if (!hasSourceField('pay_willingness')) {
+        insights.push('暂无付费意向字段，商业化意向需要补充 pay_willingness 与 price_acceptance。');
+      }
+      return insights.length ? insights : ['当前筛选用户路径较顺畅，可继续观察细分场景的功能需求和回访表现。'];
+    }
+
+    function groupMetrics(rows) {
+      const registered = rows.filter((row) => row.registered).length;
+      const created = rows.filter((row) => row.registered && row.created_topic).length;
+      const completed = rows.filter((row) => row.registered && row.completed_core_action).length;
+      const returned = hasSourceField('returned_7d') ? rows.filter((row) => row.registered && row.returned_7d).length : null;
+      const highPay = hasSourceField('pay_willingness') ? rows.filter((row) => row.registered && row.pay_willingness === '高').length : null;
+      const issue = topEntry(countBy(rows, 'issue_type'))[0];
+      return {
+        userCount: rows.length,
+        topicRate: formatPercent(created, registered),
+        topicRateNum: percentNumber(created, registered),
+        coreRate: formatPercent(completed, registered),
+        coreRateNum: percentNumber(completed, registered),
+        returnedRate: hasSourceField('returned_7d') ? formatPercent(returned, registered) : '暂无数据',
+        highPayRate: hasSourceField('pay_willingness') ? formatPercent(highPay, registered) : '暂无付费意向字段',
+        topNeed: topEntry(countBy(rows, 'function_need'))[0],
+        topIssue: issue,
+        status: getSegmentStatus(percentNumber(created, registered), percentNumber(completed, registered), issue)
+      };
+    }
+
+    function getSegmentStatus(topicRate, coreRate, issue) {
+      if (coreRate >= 65) return ['路径顺畅', 'bg-emerald-50 text-success border-emerald-200'];
+      if (['功能理解', '使用场景不清晰', 'Prompt 不会用'].includes(issue)) return ['需要运营引导', 'bg-neutralSoft text-primary border-neutralLine'];
+      if (['入口不明显', '流程复杂', '内容分类不清晰'].includes(issue)) return ['需要产品优化', 'bg-altSoft text-altText border-altLine'];
+      if (topicRate < 55 || coreRate < 45) return ['存在流失风险', 'bg-orange/10 text-orange border-orange/20'];
+      return ['需要运营引导', 'bg-neutralSoft text-primary border-neutralLine'];
+    }
+
+    function renderSegments() {
+      if (state.mode !== 'path') {
+        $('segmentsContent').innerHTML = inactiveModule('当前数据类型不适用用户级分群分析。上传用户路径数据后，可按 user_type 分析激活、回访、付费意愿和问题类型。');
+        return;
+      }
+      const groups = Object.entries(getFilteredPathRows().reduce((acc, row) => {
+        acc[row.user_type] = acc[row.user_type] || [];
+        acc[row.user_type].push(row);
+        return acc;
+      }, {})).sort((a, b) => b[1].length - a[1].length);
+      if (!groups.length) {
+        $('segmentsContent').innerHTML = inactiveModule('当前筛选条件下暂无用户分群数据。');
+        return;
+      }
+      $('segmentsContent').innerHTML = `
+        <div class="table-wrap overflow-x-auto rounded-xl border border-line bg-white">
+          <table class="w-full min-w-[1080px] border-collapse text-left text-sm">
+            <thead class="bg-slate-50 text-xs font-bold text-muted">
+              <tr>
+                <th class="px-4 py-4">用户类型</th>
+                <th class="px-4 py-4">用户数</th>
+                <th class="px-4 py-4">专题创建率</th>
+                <th class="px-4 py-4">首次核心体验完成率</th>
+                <th class="px-4 py-4">7 日内回访率</th>
+                <th class="px-4 py-4">高付费意愿占比</th>
+                <th class="px-4 py-4">主要功能需求</th>
+                <th class="px-4 py-4">主要问题类型</th>
+                <th class="px-4 py-4">状态</th>
+                <th class="px-4 py-4">建议动作</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${groups.map(([type, rows]) => {
+                const metrics = groupMetrics(rows);
+                const [status, statusClass] = metrics.status;
+                return `
+                  <tr class="border-b border-line last:border-0">
+                    <td class="px-4 py-4 font-bold text-ink">${escapeHTML(type)}</td>
+                    <td class="px-4 py-4 text-bodyText">${metrics.userCount}</td>
+                    <td class="px-4 py-4 text-bodyText">${metrics.topicRate}</td>
+                    <td class="px-4 py-4 text-bodyText">${metrics.coreRate}</td>
+                    <td class="px-4 py-4 text-bodyText">${metrics.returnedRate}</td>
+                    <td class="px-4 py-4 text-bodyText">${metrics.highPayRate}</td>
+                    <td class="px-4 py-4 text-bodyText">${escapeHTML(metrics.topNeed)}</td>
+                    <td class="px-4 py-4 text-bodyText">${escapeHTML(metrics.topIssue)}</td>
+                    <td class="px-4 py-4"><span class="badge border ${statusClass}">${escapeHTML(status)}</span></td>
+                    <td class="px-4 py-4 text-muted">${escapeHTML(getActionForIssue(metrics.topIssue))}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function getActionForIssue(issue) {
+      return pathIssueMeta[issue]?.suggestion || '结合反馈补充使用教程或反馈给产品优化体验。';
+    }
+
+    function setDefaultCross(mode) {
+      if (mode === 'survey') {
+        const map = getSurveyMap(state.headers);
+        state.crossRow = map.industry || map.status || state.headers[0] || '';
+        state.crossCol = map.pay || map.pain || state.headers[1] || '';
+      } else {
+        state.crossRow = 'user_type';
+        state.crossCol = 'issue_type';
+      }
+    }
+
+    function getCrossRowsAndDimensions() {
+      if (state.mode === 'path') {
+        return { rows: getFilteredPathRows(), dimensions: pathCrossDimensions.map((field) => ({ field, label: `${field} · ${fieldLabels[field]}` })) };
+      }
+      if (state.mode === 'survey') {
+        const map = getSurveyMap(state.headers);
+        const dims = [
+          map.industry, map.pain, map.status, map.rating, map.pay, map.price, map.hesitate, map.reason, map.value
+        ].filter(Boolean);
+        return { rows: state.rawRows, dimensions: unique(dims).map((field) => ({ field, label: field })) };
+      }
+      return { rows: [], dimensions: [] };
+    }
+
+    function renderCrossControls() {
+      const { dimensions } = getCrossRowsAndDimensions();
+      if (!dimensions.length) {
+        $('crossControls').innerHTML = '';
+        return;
+      }
+      if (!dimensions.some((item) => item.field === state.crossRow)) state.crossRow = dimensions[0].field;
+      if (!dimensions.some((item) => item.field === state.crossCol)) state.crossCol = dimensions[1]?.field || dimensions[0].field;
+      const options = dimensions.map((item) => `<option value="${escapeHTML(item.field)}">${escapeHTML(item.label)}</option>`).join('');
+      $('crossControls').innerHTML = `
+        <label class="grid gap-1 text-xs font-semibold text-muted">行维度
+          <select id="crossRow" class="min-w-[190px] rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium text-bodyText outline-none transition focus:border-primary">${options}</select>
+        </label>
+        <label class="grid gap-1 text-xs font-semibold text-muted">列维度
+          <select id="crossCol" class="min-w-[190px] rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium text-bodyText outline-none transition focus:border-primary">${options}</select>
+        </label>
+      `;
+      $('crossRow').value = state.crossRow;
+      $('crossCol').value = state.crossCol;
+      $('crossRow').addEventListener('change', (event) => {
+        state.crossRow = event.target.value;
+        renderCrossAnalysis();
+      });
+      $('crossCol').addEventListener('change', (event) => {
+        state.crossCol = event.target.value;
+        renderCrossAnalysis();
+      });
+    }
+
+    function getExpandedCellValues(row, field) {
+      if (state.mode === 'survey') return splitMulti(row[field]);
+      return [displayValue(row, field)];
+    }
+
+    function buildCrossTable(rows, rowField, colField) {
+      const rowValues = unique(rows.flatMap((row) => getExpandedCellValues(row, rowField)));
+      const colValues = unique(rows.flatMap((row) => getExpandedCellValues(row, colField)));
+      const matrix = rowValues.map((rowValue) => colValues.map((colValue) => rows.reduce((count, row) => {
+        const rowMatches = getExpandedCellValues(row, rowField).includes(rowValue);
+        const colMatches = getExpandedCellValues(row, colField).includes(colValue);
+        return count + (rowMatches && colMatches ? 1 : 0);
+      }, 0)));
+      return { rowValues, colValues, matrix };
+    }
+
+    function renderCrossAnalysis() {
+      renderCrossControls();
+      const { rows, dimensions } = getCrossRowsAndDimensions();
+      if (!['path', 'survey'].includes(state.mode)) {
+        $('crossContent').innerHTML = inactiveModule('当前数据类型不适用 SPSS 式交叉分析。行为埋点数据适合做事件趋势和用户频次分析；核心指标日报数据适合做趋势分析。');
+        return;
+      }
+      if (!rows.length || !dimensions.length) {
+        $('crossContent').innerHTML = inactiveModule('当前筛选条件下暂无交叉分析数据。');
+        return;
+      }
+      const { rowValues, colValues, matrix } = buildCrossTable(rows, state.crossRow, state.crossCol);
+      const stats = chiSquareTest(matrix);
+      const statCards = [
+        { label: 'Chi-square χ²', value: formatNumber(stats.chi2, 3) },
+        { label: 'df', value: stats.df },
+        { label: 'p 值', value: stats.df > 0 ? formatP(stats.p) : '暂无' },
+        { label: "Cramer's V", value: formatNumber(stats.cramersV, 3) }
+      ];
+      const table = `
+        <div class="table-wrap overflow-x-auto rounded-xl border border-line bg-white">
+          <table class="w-full min-w-[900px] border-collapse text-left text-sm">
+            <thead class="bg-slate-50 text-xs font-bold text-muted">
+              <tr>
+                <th class="px-4 py-4">${escapeHTML(state.crossRow)}</th>
+                ${colValues.map((col) => `<th class="px-4 py-4">${escapeHTML(col)}</th>`).join('')}
+                <th class="px-4 py-4">行合计</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowValues.map((rowValue, rowIndex) => {
+                const rowTotal = matrix[rowIndex].reduce((sum, value) => sum + value, 0);
+                return `
+                  <tr class="border-b border-line last:border-0">
+                    <td class="px-4 py-4 font-bold text-ink">${escapeHTML(rowValue)}</td>
+                    ${colValues.map((colValue, colIndex) => {
+                      const count = matrix[rowIndex][colIndex];
+                      return `<td class="px-4 py-4"><p class="font-semibold text-bodyText">${count} 人</p><p class="mt-1 text-xs text-muted">行内 ${formatPercent(count, rowTotal)}</p></td>`;
+                    }).join('')}
+                    <td class="px-4 py-4 font-bold text-bodyText">${rowTotal}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+      const lowSample = stats.n < 30 || stats.lowExpected;
+      $('crossContent').innerHTML = `
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">${statCards.map((card) => `<div class="card p-4"><p class="text-xs font-bold text-muted">${escapeHTML(card.label)}</p><p class="mt-2 text-2xl font-bold text-ink">${escapeHTML(card.value)}</p></div>`).join('')}</div>
+        <div class="mt-4 rounded-xl border border-neutralLine bg-neutralSoft p-4">
+          <p class="text-sm font-bold text-ink">${escapeHTML(buildCrossInsight(state.crossRow, state.crossCol, stats, lowSample))}</p>
+          <p class="mt-2 text-xs leading-5 text-muted">内置数据为虚构示例；上传问卷也可能是小样本。卡方检验和 p 值用于探索性分析，不将示例结果视为真实业务差异或因果结论。</p>
+        </div>
+        <div class="mt-4">${table}</div>
+      `;
+    }
+
+    function chiSquareTest(matrix) {
+      const rows = matrix.length;
+      const cols = matrix[0]?.length || 0;
+      const rowTotals = matrix.map((row) => row.reduce((sum, value) => sum + value, 0));
+      const colTotals = Array.from({ length: cols }, (_, col) => matrix.reduce((sum, row) => sum + row[col], 0));
+      const n = rowTotals.reduce((sum, value) => sum + value, 0);
+      let chi2 = 0;
+      let lowExpected = false;
+      for (let r = 0; r < rows; r += 1) {
+        for (let c = 0; c < cols; c += 1) {
+          const expected = n ? (rowTotals[r] * colTotals[c]) / n : 0;
+          if (expected > 0 && expected < 5) lowExpected = true;
+          if (expected > 0) chi2 += ((matrix[r][c] - expected) ** 2) / expected;
+        }
+      }
+      const df = Math.max((rows - 1) * (cols - 1), 0);
+      const p = df > 0 ? chiSquarePValue(chi2, df) : 1;
+      const cramersV = n && Math.min(rows - 1, cols - 1) > 0 ? Math.sqrt(chi2 / (n * Math.min(rows - 1, cols - 1))) : 0;
+      return { chi2, df, p, cramersV, n, lowExpected };
+    }
+
+    function gammaln(xx) {
+      const cof = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+      let x = xx - 1;
+      let tmp = x + 5.5;
+      tmp -= (x + 0.5) * Math.log(tmp);
+      let ser = 1.000000000190015;
+      for (let j = 0; j < cof.length; j += 1) {
+        x += 1;
+        ser += cof[j] / x;
+      }
+      return -tmp + Math.log(2.5066282746310005 * ser);
+    }
+
+    function gammap(a, x) {
+      if (x < 0 || a <= 0) return 0;
+      if (x === 0) return 0;
+      if (x < a + 1) {
+        let ap = a;
+        let sum = 1 / a;
+        let del = sum;
+        for (let n = 1; n <= 100; n += 1) {
+          ap += 1;
+          del *= x / ap;
+          sum += del;
+          if (Math.abs(del) < Math.abs(sum) * 3e-7) return sum * Math.exp(-x + a * Math.log(x) - gammaln(a));
+        }
+        return sum * Math.exp(-x + a * Math.log(x) - gammaln(a));
+      }
+      return 1 - gammq(a, x);
+    }
+
+    function gammq(a, x) {
+      if (x < 0 || a <= 0) return 1;
+      if (x < a + 1) return 1 - gammap(a, x);
+      let b = x + 1 - a;
+      let c = 1 / 1e-30;
+      let d = 1 / b;
+      let h = d;
+      for (let i = 1; i <= 100; i += 1) {
+        const an = -i * (i - a);
+        b += 2;
+        d = an * d + b;
+        if (Math.abs(d) < 1e-30) d = 1e-30;
+        c = b + an / c;
+        if (Math.abs(c) < 1e-30) c = 1e-30;
+        d = 1 / d;
+        const del = d * c;
+        h *= del;
+        if (Math.abs(del - 1) < 3e-7) break;
+      }
+      return Math.exp(-x + a * Math.log(x) - gammaln(a)) * h;
+    }
+
+    function chiSquarePValue(chi2, df) {
+      return Math.max(0, Math.min(1, gammq(df / 2, chi2 / 2)));
+    }
+
+    function formatP(p) {
+      if (p < 0.001) return '< 0.001';
+      return p.toFixed(3);
+    }
+
+    function buildCrossInsight(rowField, colField, stats, lowSample) {
+      const effect = stats.cramersV >= 0.5 ? '较强关联' : stats.cramersV >= 0.3 ? '中等关联' : stats.cramersV >= 0.1 ? '弱关联' : '关联较弱';
+      const sig = stats.p < 0.05 ? '两个变量之间可能存在显著关联' : '暂未发现显著关联';
+      const caveat = lowSample ? '当前样本量较小或期望频数偏低，结果仅供探索性参考。' : '';
+      if (rowField === 'user_type' && colField === 'issue_type' && stats.p < 0.05) return `不同用户类型的问题分布可能存在差异，可按用户群体设计差异化新手引导内容。${caveat}`;
+      if (rowField === 'user_type' && colField === 'pay_willingness' && stats.p < 0.05) return `付费意愿可能与用户类型有关，可优先关注高付费意愿用户群体。${caveat}`;
+      if (rowField === 'use_scene' && colField === 'function_need' && stats.p < 0.05) return `不同使用场景对应的功能需求不同，可设计场景化模板和内容承接。${caveat}`;
+      return `${sig}，Cramer's V 显示为${effect}。${caveat}`;
+    }
+
+    function renderIssues() {
+      if (state.mode === 'survey') {
+        renderSurveyIssues();
+        return;
+      }
+      if (state.mode !== 'path') {
+        $('issuesContent').innerHTML = inactiveModule('当前数据类型不适用用户反馈标签归因。');
+        $('pathTreeContent').innerHTML = inactiveModule('当前数据类型不适用层级路径诊断。');
+        renderIssueCategory([], true);
+        return;
+      }
+      const rows = getFilteredPathRows();
+      const stats = computePathStats(rows);
+      if (!hasSourceField('issue_type')) {
+        $('issuesContent').innerHTML = inactiveModule('暂无问题标签字段，可补充 issue_type 后进行归因分析。');
+      } else {
+        const issueEntries = Object.entries(countBy(rows, 'issue_type')).sort((a, b) => b[1] - a[1]);
+        const max = Math.max(...issueEntries.map(([, count]) => count), 1);
+        $('issuesContent').innerHTML = `
+          <div class="space-y-3">
+            ${issueEntries.map(([issue, count]) => {
+              const meta = pathIssueMeta[issue] || pathIssueMeta['未标注问题'];
+              return `
+                <div class="rounded-xl border border-line bg-white p-4">
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p class="font-bold text-ink">${escapeHTML(issue)}</p>
+                      <p class="mt-1 text-xs text-muted">出现 ${count} 人 · 占比 ${formatPercent(count, rows.length)}</p>
+                    </div>
+                    <span class="badge bg-neutralSoft text-primary">${escapeHTML(meta.node)}</span>
+                  </div>
+                  <div class="mt-3 bar-track h-2"><div class="h-2 rounded-full bg-primary" style="width:${Math.max((count / max) * 100, 8)}%"></div></div>
+                  <p class="mt-3 text-xs leading-5 text-muted">对应建议：${escapeHTML(meta.suggestion)}</p>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
+      $('pathTreeContent').innerHTML = `
+        <div class="rounded-xl border border-line bg-white p-4">
+          <div class="mb-3 flex flex-wrap items-center gap-2">
+            <span class="badge bg-primary text-white">重点关注</span>
+            <span class="badge bg-slate-100 text-bodyText">${stats.maxDropoff ? `${stats.maxDropoff.from} → ${stats.maxDropoff.to}` : '暂无明显流失节点'}</span>
+          </div>
+          <p class="text-3xl font-bold text-primary">${stats.maxDropoff ? stats.maxDropoff.lost : 0} 人</p>
+          <p class="mt-2 text-sm font-semibold text-muted">该环节流失率 ${stats.maxDropoff ? formatPercent(stats.maxDropoff.lost, stats.maxDropoff.previous) : '0.0%'}</p>
+          <div class="mt-4 space-y-3">${renderPathTree(stats)}</div>
+        </div>
+      `;
+      renderIssueCategory(rows);
+    }
+
+    function renderIssueCategory(rows, inactive = false) {
+      if (inactive) {
+        $('opsIssueBadge').textContent = '不适用';
+        $('productIssueBadge').textContent = '不适用';
+        $('opsIssueContent').innerHTML = inactiveModule('当前数据类型不适用运营 / 产品问题分类。');
+        $('productIssueContent').innerHTML = inactiveModule('当前数据类型不适用运营 / 产品问题分类。');
+        return;
+      }
+      const issueCounts = countBy(rows, 'issue_type');
+      const opsTotal = opsIssueTypes.reduce((sum, issue) => sum + (issueCounts[issue] || 0), 0);
+      const productTotal = productIssueTypes.reduce((sum, issue) => sum + (issueCounts[issue] || 0), 0);
+      $('opsIssueBadge').textContent = `${opsTotal} 人 · ${formatPercent(opsTotal, rows.length)}`;
+      $('productIssueBadge').textContent = `${productTotal} 人 · ${formatPercent(productTotal, rows.length)}`;
+      const renderList = (types, colorClass) => types.map((issue) => `
+        <div class="rounded-xl border border-white/70 bg-white p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="font-bold text-ink">${escapeHTML(issue)}</p>
+              <p class="mt-1 text-xs text-muted">${escapeHTML(pathIssueMeta[issue]?.suggestion || '持续观察反馈')}</p>
+            </div>
+            <span class="badge ${colorClass} text-white">${issueCounts[issue] || 0}</span>
+          </div>
+        </div>
+      `).join('');
+      $('opsIssueContent').innerHTML = renderList(opsIssueTypes, 'bg-primary');
+      $('productIssueContent').innerHTML = renderList(productIssueTypes, 'bg-altText');
+    }
+
+    function renderSuggestions() {
+      const suggestions = buildSuggestions();
+      const checklist = (items, colorClass) => items.map((item) => `
+        <div class="rounded-xl border border-line bg-white p-4">
+          <div class="flex gap-3">
+            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${colorClass} text-xs font-bold text-white">✓</span>
+            <div>
+              <p class="font-bold text-ink">${escapeHTML(item.title)}</p>
+              <p class="mt-1 text-xs leading-5 text-muted">${escapeHTML(item.basis)}</p>
+            </div>
+          </div>
+        </div>
+      `).join('');
+      $('suggestionsContent').innerHTML = `
+        <div class="grid gap-5 xl:grid-cols-2">
+          <div>
+            <h3 class="mb-3 text-base font-bold text-primary">内容运营建议</h3>
+            <div class="space-y-3">${checklist(suggestions.ops, 'bg-primary')}</div>
+          </div>
+          <div>
+            <h3 class="mb-3 text-base font-bold text-altText">产品沟通建议</h3>
+            <div class="space-y-3">${checklist(suggestions.product, 'bg-altText')}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function buildSuggestions() {
+      if (state.mode === 'event') {
+        const event = analyzeEvents();
+        return {
+          ops: [
+            { title: '针对低频打开用户设计首次体验承接内容', basis: `低频打开用户 ${event.lowFrequencyUsers} 人，需要补充首日引导和回访触达。` },
+            { title: '围绕高频回访用户沉淀典型使用场景', basis: `高频回访用户 ${event.highFrequencyUsers} 人，可用于验证核心场景价值。` },
+            { title: '补充深层事件埋点后完善路径漏斗', basis: '建议后续加入 created_topic、viewed_ai_summary、enabled_reminder 等事件。' }
+          ],
+          product: [
+            { title: '检查首次打开后的核心功能入口', basis: '如果大量用户只打开 1 次，可能说明首次体验承接不足。' },
+            { title: '补充专题创建和 AI 摘要查看埋点', basis: '当前埋点若仅有打开事件，无法判断核心功能路径。' }
+          ]
+        };
+      }
+      if (state.mode === 'daily') {
+        const daily = analyzeDaily();
+        return {
+          ops: [
+            { title: '观察日活波动与内容入库量的关系', basis: `当前日报共 ${daily.rows.length} 天，最高日活为 ${daily.maxDau.value}。` },
+            { title: '强化专题模板和新手引导内容', basis: `专题创建 UV 率 ${daily.topicCreateUvRate}，可用于判断核心功能使用深度。` },
+            { title: '优化 Push 文案和发送时机', basis: `Push 用户拉活率 ${daily.pushWakeRate}。` }
+          ],
+          product: [
+            { title: '关注专题功能入口和默认模板', basis: '若专题创建 UV 率偏低，说明核心功能仍需要产品侧承接。' },
+            { title: '完善日报维度字段', basis: '建议补充登录用户、内容入库量和深层功能使用字段。' }
+          ]
+        };
+      }
+      if (state.mode === 'survey') {
+        const survey = analyzeSurvey();
+        const topPain = topEntry(survey.painCounts)[0];
+        return {
+          ops: [
+            { title: '增加新手引导内容', basis: `问卷痛点集中在“${topPain}”，适合用教程和案例承接。` },
+            { title: '增加不同用户类型的使用场景案例', basis: '结合职业 / 所在行业与最初使用原因做差异化内容。' },
+            { title: '增加会员价值说明', basis: '围绕付费犹豫原因补充试用权益和会员权益对比。' }
+          ],
+          product: [
+            { title: '反馈使用路径中的不顺点', basis: `当前高频痛点：${topPain}。` },
+            { title: '优化内容分类和收藏整理路径', basis: '开放反馈中出现专题管理、信息量和整理相关诉求。' }
+          ]
+        };
+      }
+      if (state.mode !== 'path') {
+        return {
+          ops: [{ title: '补充可识别字段后再生成运营建议', basis: '当前数据字段不足，暂无法判断用户路径或反馈归因。' }],
+          product: [{ title: '先确认数据导出格式', basis: '建议上传用户路径、行为埋点、问卷反馈或核心指标日报数据。' }]
+        };
+      }
+      const rows = getFilteredPathRows();
+      const stats = computePathStats(rows);
+      const issueCounts = countBy(rows, 'issue_type');
+      return {
+        ops: [
+          { title: '增加新手引导内容', basis: `功能理解 ${issueCounts['功能理解'] || 0} 人，专题创建率 ${formatPercent(stats.createdTopic, stats.registered)}。` },
+          { title: '增加不同用户类型的使用场景案例', basis: `使用场景不清晰 ${issueCounts['使用场景不清晰'] || 0} 人。` },
+          { title: '增加 Prompt 示例', basis: `Prompt 不会用 ${issueCounts['Prompt 不会用'] || 0} 人。` },
+          { title: '增加专题创建教程', basis: '围绕创建资讯专题、关键词监测、热点提醒形成新手内容。' },
+          { title: '增加会员价值说明', basis: `价格顾虑 ${issueCounts['价格顾虑'] || 0} 人，高付费意愿 ${hasSourceField('pay_willingness') ? formatPercent(stats.highPay, stats.registered) : '暂无付费意向字段'}。` },
+          { title: '针对高付费意愿用户设计试用转化内容', basis: hasSourceField('pay_willingness') ? `当前高付费意愿用户 ${stats.highPay} 人。` : '暂无付费意向字段。' }
+        ],
+        product: [
+          { title: '反馈入口不明显问题', basis: `入口不明显 ${issueCounts['入口不明显'] || 0} 人。` },
+          { title: '反馈首次专题创建流程较复杂', basis: `流程复杂 ${issueCounts['流程复杂'] || 0} 人。` },
+          { title: '建议增加默认专题模板', basis: '适合 AI 热点、半导体产业链、投资跟踪、内容选题等 ToC 场景。' },
+          { title: '建议优化提醒设置入口', basis: `提醒启用率 ${hasSourceField('enabled_reminder') ? formatPercent(stats.enabledReminder, stats.registered) : '暂无数据'}。` },
+          { title: '建议优化内容分类和收藏整理路径', basis: `内容分类不清晰 ${issueCounts['内容分类不清晰'] || 0} 人。` }
+        ]
+      };
+    }
+
+    function eventFieldMap() {
+      return {
+        id: findField(state.headers, ['Person.distinct_id', 'distinct_id']),
+        event: findField(state.headers, ['event']),
+        timestamp: findField(state.headers, ['timestamp', 'time', '时间']),
+        url: findField(state.headers, ['Url', 'URL', 'Screen', 'screen', '页面']),
+        lib: findField(state.headers, ['properties.$lib', '$lib', 'lib'])
+      };
+    }
+
+    function analyzeEvents() {
+      const map = eventFieldMap();
+      const rows = state.mode === 'event' ? state.rawRows : [];
+      const userCounts = {};
+      const userDates = {};
+      const daily = {};
+      rows.forEach((row) => {
+        const id = row[map.id] || '未知用户';
+        const event = row[map.event] || '未知事件';
+        const dateObj = new Date(row[map.timestamp]);
+        const date = Number.isNaN(dateObj.getTime()) ? String(row[map.timestamp] || '未知日期').slice(0, 10) : dateObj.toISOString().slice(0, 10);
+        userCounts[id] = (userCounts[id] || 0) + 1;
+        userDates[id] = userDates[id] || [];
+        userDates[id].push(date);
+        daily[date] = daily[date] || { events: 0, users: new Set() };
+        daily[date].events += 1;
+        daily[date].users.add(id);
+      });
+      const userStats = Object.entries(userCounts).map(([id, count]) => {
+        const dates = unique(userDates[id]).sort();
+        return { id: anonymizeIdentifier(id), rawId: id, count, first: dates[0] || '-', last: dates[dates.length - 1] || '-', activeDays: dates.length, status: count >= 5 ? '高频回访用户' : count >= 2 ? '普通活跃用户' : '低频打开用户' };
+      }).sort((a, b) => b.count - a.count);
+      const eventCounts = countByValues(rows.map((row) => row[map.event] || '未知事件'));
+      const uniqueUsers = Object.keys(userCounts).length;
+      return {
+        rows,
+        map,
+        totalEvents: rows.length,
+        uniqueUsers,
+        eventTypes: Object.keys(eventCounts).length,
+        eventCounts,
+        avgEvents: uniqueUsers ? rows.length / uniqueUsers : 0,
+        daily: Object.entries(daily).sort((a, b) => a[0].localeCompare(b[0])).map(([date, item]) => ({ date, events: item.events, users: item.users.size, avg: item.users.size ? item.events / item.users.size : 0 })),
+        userStats,
+        highFrequencyUsers: userStats.filter((user) => user.status === '高频回访用户').length,
+        lowFrequencyUsers: userStats.filter((user) => user.status === '低频打开用户').length,
+        openedCount: rows.filter((row) => String(row[map.event]).toLowerCase().includes('application opened')).length,
+        onlyOpened: Object.keys(eventCounts).length === 1 && Object.keys(eventCounts)[0]?.toLowerCase().includes('application opened')
+      };
+    }
+
+    function renderEventData() {
+      if (state.mode !== 'event') {
+        $('eventContent').innerHTML = inactiveModule('当前数据类型不是行为埋点数据。上传包含 Person.distinct_id / distinct_id、event、timestamp 的数据后可查看。');
+        return;
+      }
+      const event = analyzeEvents();
+      const dates = event.daily.map((item) => item.date).filter((date) => date !== '未知日期');
+      const range = dates.length ? `${dates[0]} 至 ${dates[dates.length - 1]}` : '暂无';
+      const maxEvents = Math.max(...event.daily.map((item) => item.events), 1);
+      $('eventContent').innerHTML = `
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          ${[
+            ['总事件数', event.totalEvents, '当前上传事件总量'],
+            ['独立用户数', event.uniqueUsers, '按 distinct_id 去重'],
+            ['事件类型数', event.eventTypes, 'event 分组数量'],
+            ['数据时间范围', range, '按 timestamp 解析'],
+            ['人均事件次数', formatNumber(event.avgEvents, 2), '总事件 / 独立用户']
+          ].map(([label, value, note]) => renderMetricCard({ label, value, note })).join('')}
+        </div>
+        <div class="mt-5 grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+          <div class="card p-4">
+            <h3 class="mb-3 text-base font-bold text-ink">App 打开行为分析</h3>
+            <div class="grid gap-3">
+              ${renderSmallStat('App 打开总次数', event.openedCount || event.totalEvents)}
+              ${renderSmallStat('打开 App 的独立用户数', event.uniqueUsers)}
+              ${renderSmallStat('人均打开次数', formatNumber(event.avgEvents, 2))}
+              ${renderSmallStat('高频打开用户数', event.highFrequencyUsers)}
+              ${renderSmallStat('低频打开用户数', event.lowFrequencyUsers)}
+            </div>
+            ${event.onlyOpened ? '<p class="mt-4 rounded-lg border border-neutralLine bg-neutralSoft px-3 py-3 text-sm leading-6 text-bodyText">当前行为埋点数据主要包含 App 打开事件，可用于分析活跃与回访情况；由于缺少专题创建、AI 摘要查看、提醒启用等深层事件，暂不适合生成完整核心功能漏斗。</p>' : ''}
+          </div>
+          <div class="card p-4">
+            <h3 class="mb-3 text-base font-bold text-ink">每日活跃趋势</h3>
+            <div class="space-y-3">
+              ${event.daily.map((item) => `
+                <div>
+                  <div class="mb-1 flex items-center justify-between gap-3 text-xs">
+                    <span class="font-bold text-bodyText">${escapeHTML(item.date)}</span>
+                    <span class="text-muted">${item.events} 事件 · ${item.users} 用户 · 人均 ${formatNumber(item.avg, 2)}</span>
+                  </div>
+                  <div class="bar-track h-2"><div class="h-2 rounded-full bg-primary" style="width:${Math.max((item.events / maxEvents) * 100, 6)}%"></div></div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+        <div class="mt-5">
+          <h3 class="mb-3 text-base font-bold text-ink">高频用户分析</h3>
+          <div class="table-wrap overflow-x-auto rounded-xl border border-line bg-white">
+          <table class="w-full min-w-[860px] text-left text-sm">
+            <thead class="bg-slate-50 text-xs font-bold text-muted"><tr><th class="px-4 py-4">用户 ID</th><th class="px-4 py-4">打开次数</th><th class="px-4 py-4">首次打开</th><th class="px-4 py-4">最后打开</th><th class="px-4 py-4">活跃天数</th><th class="px-4 py-4">活跃状态标签</th></tr></thead>
+            <tbody>${event.userStats.slice(0, 12).map((user) => `<tr class="border-b border-line last:border-0"><td class="px-4 py-4 font-bold text-ink">${escapeHTML(user.id)}</td><td class="px-4 py-4">${user.count}</td><td class="px-4 py-4">${escapeHTML(user.first)}</td><td class="px-4 py-4">${escapeHTML(user.last)}</td><td class="px-4 py-4">${user.activeDays}</td><td class="px-4 py-4"><span class="badge ${user.status === '高频回访用户' ? 'bg-neutralSoft text-primary' : user.status === '普通活跃用户' ? 'bg-emerald-50 text-success' : 'bg-slate-100 text-muted'}">${escapeHTML(user.status)}</span></td></tr>`).join('')}</tbody>
+          </table>
+          </div>
+        </div>
+        <div class="mt-5 rounded-xl border border-neutralLine bg-neutralSoft p-4">
+          <p class="text-sm font-bold text-ink">自动行为洞察</p>
+          <div class="mt-2 grid gap-2 text-sm leading-6 text-bodyText">
+            <p>当前数据可以判断用户打开 App 的频率和回访情况。</p>
+            <p>${event.avgEvents >= 2 ? '人均打开次数较高，说明存在一定重复访问行为。' : '人均打开次数偏低，需要进一步分析首次体验承接是否充分。'}</p>
+            <p>若后续补充 created_topic、viewed_ai_summary、enabled_reminder 等事件，可进一步生成完整核心功能路径漏斗。</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderSmallStat(label, value) {
+      return `<div class="flex items-center justify-between rounded-lg border border-line bg-slate-50 px-3 py-2"><span class="text-sm text-muted">${escapeHTML(label)}</span><span class="font-bold text-ink">${escapeHTML(value)}</span></div>`;
+    }
+
+    function findDailyField(headers, key) {
+      const aliases = {
+        '日期': ['日期', 'date', 'day'],
+        '日活': ['日活', 'DAU', 'dau'],
+        '冷启 UV': ['冷启 UV', '冷启UV', 'cold_start_uv'],
+        'icon 拉活 UV': ['icon 拉活 UV', 'icon拉活UV', 'icon_uv'],
+        'push 拉活 UV': ['push 拉活 UV', 'push拉活UV', 'push_wake_uv'],
+        '端外 H5 拉活 UV': ['端外 H5 拉活 UV', '端外H5拉活UV', 'h5_uv'],
+        '次日留存': ['次日留存', 'd1_retention'],
+        'app 人均使用时长': ['app 人均使用时长', 'app人均使用时长', 'avg_duration'],
+        '注册账号用户数': ['注册账号用户数', '登录用户数', 'registered_users'],
+        '关注专题次数': ['关注专题次数', 'follow_topic_count'],
+        '关注专题 UV': ['关注专题 UV', '关注专题UV', 'follow_topic_uv'],
+        '被关注专题数': ['被关注专题数', 'followed_topic_count'],
+        '创建专题数量': ['创建专题数量', 'created_topic_count'],
+        '创建专题 UV': ['创建专题 UV', '创建专题UV', 'created_topic_uv'],
+        '入库新闻数': ['入库新闻数', 'news_count'],
+        'push 发送量': ['push 发送量', 'push发送量', 'push_send_count'],
+        'push 发送用户数': ['push 发送用户数', 'push发送用户数', 'push_send_users']
+      };
+      return findField(headers, aliases[key] || [key]);
+    }
+
+    function dailyValue(row, key) {
+      const field = findDailyField(state.headers, key);
+      return field ? row[field] : '';
+    }
+
+    function analyzeDaily() {
+      const rows = state.mode === 'daily' ? [...state.rawRows].sort((a, b) => String(dailyValue(a, '日期')).localeCompare(String(dailyValue(b, '日期')))) : [];
+      const sum = (key) => rows.reduce((total, row) => total + toNumber(dailyValue(row, key)), 0);
+      const dauValues = rows.map((row) => ({ date: dailyValue(row, '日期'), value: toNumber(dailyValue(row, '日活')) }));
+      const maxDau = dauValues.reduce((best, item) => item.value > best.value ? item : best, { date: '-', value: 0 });
+      const minDau = dauValues.reduce((best, item) => item.value < best.value ? item : best, dauValues[0] || { date: '-', value: 0 });
+      const firstDau = dauValues[0]?.value || 0;
+      const lastDau = dauValues[dauValues.length - 1]?.value || 0;
+      const createUv = sum('创建专题 UV');
+      const followUv = sum('关注专题 UV');
+      const totalDau = sum('日活');
+      const pushWake = sum('push 拉活 UV');
+      const pushUsers = sum('push 发送用户数');
+      const pushSends = sum('push 发送量');
+      return {
+        rows,
+        dauValues,
+        maxDau,
+        minDau,
+        trend: firstDau ? formatPercent(lastDau - firstDau, firstDau) : '暂无数据',
+        source: {
+          cold: sum('冷启 UV'),
+          icon: sum('icon 拉活 UV'),
+          push: pushWake,
+          h5: sum('端外 H5 拉活 UV')
+        },
+        retentionRows: rows.map((row) => ({ date: dailyValue(row, '日期'), retention: dailyValue(row, '次日留存'), duration: dailyValue(row, 'app 人均使用时长'), loginUsers: dailyValue(row, '注册账号用户数'), dau: dailyValue(row, '日活') })),
+        topic: {
+          followCount: sum('关注专题次数'),
+          followUv,
+          followedTopics: sum('被关注专题数'),
+          createCount: sum('创建专题数量'),
+          createUv,
+          newsCount: sum('入库新闻数')
+        },
+        topicCreateUvRate: totalDau ? formatPercent(createUv, totalDau) : '暂无数据',
+        topicFollowUvRate: totalDau ? formatPercent(followUv, totalDau) : '暂无数据',
+        avgFollowPerUser: followUv ? formatNumber(sum('关注专题次数') / followUv, 2) : '暂无数据',
+        avgCreatePerUser: createUv ? formatNumber(sum('创建专题数量') / createUv, 2) : '暂无数据',
+        push: { sends: pushSends, users: pushUsers, wake: pushWake },
+        pushWakeRate: pushUsers ? formatPercent(pushWake, pushUsers) : '暂无数据',
+        pushSingleEfficiency: pushSends ? formatPercent(pushWake, pushSends) : '暂无数据'
+      };
+    }
+
+    function renderDailyMetrics() {
+      if (state.mode !== 'daily') {
+        $('dailyContent').innerHTML = inactiveModule('当前数据类型不是核心指标日报数据。上传包含日期、日活、次日留存、创建专题 UV、push 拉活 UV 等字段的数据后可查看。');
+        return;
+      }
+      const daily = analyzeDaily();
+      const maxDau = Math.max(...daily.dauValues.map((item) => item.value), 1);
+      const sourceEntries = [
+        ['冷启 UV', daily.source.cold],
+        ['icon 拉活 UV', daily.source.icon],
+        ['push 拉活 UV', daily.source.push],
+        ['端外 H5 拉活 UV', daily.source.h5]
+      ];
+      const sourceTotal = sourceEntries.reduce((sum, [, value]) => sum + value, 0);
+      $('dailyContent').innerHTML = `
+        <div class="rounded-xl border border-neutralLine bg-neutralSoft p-4 text-sm leading-6 text-bodyText">当前数据为核心指标日报聚合数据，适合进行趋势分析和功能使用分析；由于不是用户级明细数据，不适合进行 user_type × issue_type 这类 SPSS 交叉分析。</div>
+        <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          ${renderMetricCard({ label: '最高日活', value: `${daily.maxDau.value}`, note: daily.maxDau.date })}
+          ${renderMetricCard({ label: '最低日活', value: `${daily.minDau.value}`, note: daily.minDau.date })}
+          ${renderMetricCard({ label: '近期变化趋势', value: daily.trend, note: '最后一天相对第一天' })}
+          ${renderMetricCard({ label: '专题创建 UV 率', value: daily.topicCreateUvRate, note: '创建专题 UV / 日活' })}
+        </div>
+        <div class="mt-5 grid gap-5 xl:grid-cols-2">
+          <div class="card p-4">
+            <h3 class="mb-3 text-base font-bold text-ink">日活趋势</h3>
+            <div class="space-y-3">${daily.dauValues.map((item) => `<div><div class="mb-1 flex justify-between text-xs"><span class="font-bold text-bodyText">${escapeHTML(item.date)}</span><span class="text-muted">${item.value} DAU</span></div><div class="bar-track h-2"><div class="h-2 rounded-full bg-primary" style="width:${Math.max((item.value / maxDau) * 100, 6)}%"></div></div></div>`).join('')}</div>
+          </div>
+          <div class="card p-4">
+            <h3 class="mb-3 text-base font-bold text-ink">拉活来源结构</h3>
+            <div class="space-y-3">${sourceEntries.map(([label, value]) => `<div><div class="mb-1 flex justify-between text-xs"><span class="font-bold text-bodyText">${label}</span><span class="text-muted">${value} · ${formatPercent(value, sourceTotal)}</span></div><div class="bar-track h-2"><div class="h-2 rounded-full bg-primary" style="width:${Math.max(percentNumber(value, sourceTotal), 6)}%"></div></div></div>`).join('')}</div>
+          </div>
+          <div class="card p-4">
+            <h3 class="mb-3 text-base font-bold text-ink">留存与使用深度</h3>
+            <div class="space-y-2">${daily.retentionRows.map((row) => {
+              const loginRate = row.loginUsers ? formatPercent(toNumber(row.loginUsers), toNumber(row.dau)) : '暂无数据';
+              return `<div class="rounded-lg bg-slate-50 px-3 py-2 text-xs text-muted"><span class="font-bold text-bodyText">${escapeHTML(row.date)}</span> · 次日留存 ${formatMaybePercent(row.retention)} · 人均时长 ${escapeHTML(row.duration || '暂无数据')} · 登录占比 ${loginRate}</div>`;
+            }).join('')}</div>
+          </div>
+          <div class="card p-4">
+            <h3 class="mb-3 text-base font-bold text-ink">专题功能使用分析 / Push 效率分析</h3>
+            <div class="grid gap-2">
+              ${renderSmallStat('关注专题次数', daily.topic.followCount)}
+              ${renderSmallStat('关注专题 UV 率', daily.topicFollowUvRate)}
+              ${renderSmallStat('人均关注专题次数', daily.avgFollowPerUser)}
+              ${renderSmallStat('创建专题数量', daily.topic.createCount)}
+              ${renderSmallStat('人均创建专题数', daily.avgCreatePerUser)}
+              ${renderSmallStat('Push 用户拉活率', daily.pushWakeRate)}
+              ${renderSmallStat('Push 单次发送拉活效率', daily.pushSingleEfficiency)}
+            </div>
+          </div>
+        </div>
+        <div class="mt-5 rounded-xl border border-neutralLine bg-neutralSoft p-4">
+          <p class="text-sm font-bold text-ink">自动日报洞察</p>
+          <div class="mt-2 grid gap-2 text-sm leading-6 text-bodyText">
+            <p>当前日活主要由 ${sourceEntries.sort((a, b) => b[1] - a[1])[0][0]} 贡献，说明该访问方式对活跃表现更关键。</p>
+            <p>专题创建 UV 率为 ${daily.topicCreateUvRate}，如果偏低，需要更强的新手引导和专题模板。</p>
+            <p>Push 拉活率为 ${daily.pushWakeRate}，可结合发送时机、内容匹配度和热点提醒文案继续优化。</p>
+            <p>次日留存波动建议结合专题创建率和内容入库量进一步判断用户是否形成持续追踪习惯。</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function getSurveyMap(headers = state.headers) {
+      return {
+        age: findSurveyField(headers, '年龄段'),
+        industry: findSurveyField(headers, '职业 / 所在行业'),
+        city: findSurveyField(headers, '城市 / 国家'),
+        status: findSurveyField(headers, '使用情况'),
+        rating: findSurveyField(headers, '使用体验评价'),
+        pain: findSurveyField(headers, '使用中不顺的地方'),
+        reason: findSurveyField(headers, '最初使用原因'),
+        value: findSurveyField(headers, '最有价值能力'),
+        pay: findSurveyField(headers, '是否愿意付费'),
+        price: findSurveyField(headers, '价格接受度'),
+        hesitate: findSurveyField(headers, '付费犹豫原因'),
+        improve: findSurveyField(headers, '最需要优先改进的一点')
+      };
+    }
+
+    function findSurveyField(headers, key) {
+      const aliases = {
+        '年龄段': ['年龄段', '年龄', 'age'],
+        '职业 / 所在行业': ['职业 / 所在行业', '职业/所在行业', '职业', '所在行业', '行业'],
+        '城市 / 国家': ['城市 / 国家', '城市/国家', '城市', '国家', '地区'],
+        '使用情况': ['使用情况', '当前使用情况', '使用状态'],
+        '使用体验评价': ['使用体验评价', '体验评分', '使用体验评分', '评分'],
+        '使用中不顺的地方': ['使用中不顺的地方', '不顺的地方', '痛点', '使用痛点'],
+        '最初使用原因': ['最初使用原因', '使用原因', '最初使用动机'],
+        '最有价值能力': ['最有价值能力', '哪些能力最有价值', '最有价值的能力'],
+        '是否愿意付费': ['是否愿意付费', '付费意愿', '愿意付费'],
+        '价格接受度': ['价格接受度', '9.9 元 / 月价格接受度', '9.9元/月价格接受度'],
+        '付费犹豫原因': ['付费犹豫原因', '付费顾虑', '不付费原因'],
+        '最需要优先改进的一点': ['最需要优先改进的一点', '优先改进', '改进建议']
+      };
+      return findField(headers, aliases[key] || [key]);
+    }
+
+    function surveyDistribution(rows, field, multi = false) {
+      if (!field) return {};
+      const values = rows.flatMap((row) => multi ? splitMulti(row[field]) : [row[field] || '未填写']);
+      return countByValues(values);
+    }
+
+    function analyzeSurvey() {
+      const rows = state.mode === 'survey' ? state.rawRows : [];
+      const map = getSurveyMap();
+      const ratings = map.rating ? rows.map((row) => toNumber(row[map.rating])).filter((num) => num > 0) : [];
+      return {
+        rows,
+        map,
+        ageCounts: surveyDistribution(rows, map.age),
+        industryCounts: surveyDistribution(rows, map.industry),
+        cityCounts: surveyDistribution(rows, map.city),
+        statusCounts: surveyDistribution(rows, map.status),
+        avgRating: ratings.length ? ratings.reduce((sum, num) => sum + num, 0) / ratings.length : null,
+        painCounts: surveyDistribution(rows, map.pain, true),
+        reasonCounts: surveyDistribution(rows, map.reason, true),
+        valueCounts: surveyDistribution(rows, map.value, true),
+        payCounts: surveyDistribution(rows, map.pay),
+        priceCounts: surveyDistribution(rows, map.price),
+        hesitateCounts: surveyDistribution(rows, map.hesitate, true),
+        openFeedback: map.improve ? rows.map((row) => row[map.improve]).filter(Boolean).slice(0, 8) : []
+      };
+    }
+
+    function renderDistribution(title, counts, total, color = 'bg-primary') {
+      const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+      const max = Math.max(...entries.map(([, count]) => count), 1);
+      return `
+        <div class="card p-4">
+          <h3 class="mb-3 text-base font-bold text-ink">${escapeHTML(title)}</h3>
+          <div class="space-y-3">
+            ${entries.length ? entries.map(([label, count]) => `
+              <div>
+                <div class="mb-1 flex items-center justify-between gap-3 text-xs">
+                  <span class="font-bold text-bodyText">${escapeHTML(label)}</span>
+                  <span class="text-muted">${count} · ${formatPercent(count, total)}</span>
+                </div>
+                <div class="bar-track h-2"><div class="h-2 rounded-full ${color}" style="width:${Math.max((count / max) * 100, 6)}%"></div></div>
+              </div>
+            `).join('') : '<p class="text-sm text-muted">暂无数据</p>'}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderSurveyFeedback() {
+      if (state.mode !== 'survey') {
+        $('surveyContent').innerHTML = inactiveModule('当前数据类型不是问卷反馈数据。上传包含年龄段、职业 / 所在行业、使用情况、体验评价、付费意愿等字段的数据后可查看。');
+        return;
+      }
+      const survey = analyzeSurvey();
+      const total = survey.rows.length;
+      $('surveyContent').innerHTML = `
+        ${total < 30 ? '<div class="mb-5 rounded-xl border border-orange/20 bg-orange/10 p-4 text-sm leading-6 text-bodyText">当前问卷样本量较小，卡方检验和 p 值仅用于探索性分析展示，不作为严格统计推断结论。</div>' : ''}
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          ${renderMetricCard({ label: '回答人数', value: total, note: '当前问卷样本量' })}
+          ${renderMetricCard({ label: '年龄段数量', value: Object.keys(survey.ageCounts).length, note: '年龄段分布' })}
+          ${renderMetricCard({ label: '职业 / 行业数量', value: Object.keys(survey.industryCounts).length, note: '职业 / 所在行业分布' })}
+          ${renderMetricCard({ label: '使用体验评分均值', value: survey.avgRating === null ? '暂无数据' : formatNumber(survey.avgRating, 2), note: '使用体验评价平均值' })}
+        </div>
+        <div class="mt-5 grid gap-5 xl:grid-cols-2">
+          ${renderDistribution('年龄段分布', survey.ageCounts, total)}
+          ${renderDistribution('职业 / 行业分布', survey.industryCounts, total)}
+          ${renderDistribution('城市 / 国家分布', survey.cityCounts, total)}
+          ${renderDistribution('当前使用情况分布', survey.statusCounts, total)}
+          ${renderDistribution('痛点分析：使用中不顺的地方', survey.painCounts, total)}
+          ${renderDistribution('使用动机分析：最初使用原因', survey.reasonCounts, total)}
+          ${renderDistribution('功能价值感知分析', survey.valueCounts, total)}
+          <div class="card p-4">
+            <h3 class="mb-3 text-base font-bold text-ink">付费意愿分析</h3>
+            <div class="grid gap-4">
+              ${renderDistribution('是否愿意付费', survey.payCounts, total).replace('card p-4', 'rounded-lg border border-line bg-white p-3')}
+              ${renderDistribution('价格接受度', survey.priceCounts, total).replace('card p-4', 'rounded-lg border border-line bg-white p-3')}
+              ${renderDistribution('付费犹豫原因', survey.hesitateCounts, total).replace('card p-4', 'rounded-lg border border-line bg-white p-3')}
+            </div>
+          </div>
+        </div>
+        <div class="mt-5 rounded-xl border border-line bg-white p-4">
+          <h3 class="mb-3 text-base font-bold text-ink">开放反馈分析</h3>
+          <div class="grid gap-3 xl:grid-cols-2">${survey.openFeedback.length ? survey.openFeedback.map((feedback) => `<div class="rounded-lg border border-line bg-slate-50 p-3"><p class="text-sm leading-6 text-bodyText">${escapeHTML(feedback)}</p><p class="mt-2 text-xs font-bold text-primary">归因：${escapeHTML(classifyOpenFeedback(feedback))}</p></div>`).join('') : '<p class="text-sm text-muted">暂无开放反馈字段</p>'}</div>
+        </div>
+      `;
+    }
+
+    function classifyOpenFeedback(text) {
+      const value = String(text);
+      if (/价格|付费|会员|贵/.test(value)) return '价格顾虑';
+      if (/专题|收藏|整理|分类/.test(value)) return '专题管理问题';
+      if (/AI|摘要|解读|价值/.test(value)) return 'AI 解读价值问题';
+      if (/入口|路径|流程|不会|不清楚/.test(value)) return '使用路径问题';
+      if (/功能|希望|增加|支持/.test(value)) return '功能需求建议';
+      return '内容信息量问题';
+    }
+
+    function renderSurveyIssues() {
+      const survey = analyzeSurvey();
+      const feedbackCounts = countByValues(survey.openFeedback.map(classifyOpenFeedback));
+      const entries = Object.entries(feedbackCounts).sort((a, b) => b[1] - a[1]);
+      $('issuesContent').innerHTML = entries.length ? `
+        <div class="space-y-3">${entries.map(([issue, count]) => `<div class="rounded-xl border border-line bg-white p-4"><div class="flex items-center justify-between gap-3"><p class="font-bold text-ink">${escapeHTML(issue)}</p><span class="badge bg-neutralSoft text-primary">${count} 条</span></div><p class="mt-2 text-xs text-muted">建议结合问卷原文继续拆分为运营内容问题或产品体验问题。</p></div>`).join('')}</div>
+      ` : inactiveModule('暂无可归因的开放反馈字段。');
+      $('pathTreeContent').innerHTML = inactiveModule('问卷反馈数据不是用户级路径数据，不生成层级路径诊断。');
+      renderIssueCategory([], true);
+    }
+
+    function renderPreview() {
+      const rows = getCurrentRowsForPreview();
+      const fields = getPreviewFields(rows);
+      $('previewCount').textContent = `${Math.min(10, rows.length)} / ${rows.length} 条`;
+      $('togglePreviewFields').textContent = state.previewAllFields ? '收起关键字段' : '展开全部字段';
+      if (!rows.length) {
+        $('previewContent').innerHTML = inactiveModule('当前筛选条件下暂无可预览数据。');
+        return;
+      }
+      $('previewContent').innerHTML = `
+        <div class="table-wrap overflow-x-auto rounded-xl border border-line bg-white">
+          <table class="w-full min-w-[980px] border-collapse text-left text-sm">
+            <thead class="bg-slate-50 text-xs font-bold text-muted"><tr>${fields.map((field) => `<th class="px-4 py-4">${escapeHTML(field)}</th>`).join('')}</tr></thead>
+            <tbody>${rows.slice(0, 10).map((row) => `<tr class="border-b border-line last:border-0">${fields.map((field) => `<td class="max-w-[320px] px-4 py-4 align-top text-muted">${escapeHTML(displayPreviewValue(row, field))}</td>`).join('')}</tr>`).join('')}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function getCurrentRowsForPreview() {
+      if (state.mode === 'path') return getFilteredPathRows();
+      return state.rawRows;
+    }
+
+    function getPreviewFields(rows) {
+      const headers = safeHeaders(state.mode === 'path' ? pathAllFields : getHeaders(rows));
+      if (state.previewAllFields) return headers;
+      const preferred = {
+        path: ['user_id', 'user_type', 'use_scene', 'function_need', 'completed_core_action', 'pay_willingness', 'issue_type', 'feedback'],
+        event: ['Person.distinct_id', 'distinct_id', 'event', 'timestamp', 'Url', 'Screen', 'properties.$lib'],
+        survey: ['年龄段', '职业 / 所在行业', '职业', '所在行业', '使用情况', '使用体验评价', '是否愿意付费', '价格接受度', '最需要优先改进的一点'],
+        daily: ['日期', '日活', '次日留存', 'app 人均使用时长', '创建专题 UV', '关注专题 UV', 'push 拉活 UV', 'push 发送用户数']
+      }[state.mode] || headers.slice(0, 8);
+      return preferred.filter((field) => headers.includes(field)).slice(0, 10).length ? preferred.filter((field) => headers.includes(field)).slice(0, 10) : headers.slice(0, 10);
+    }
+
+    function renderAll() {
+      renderModeStatus();
+      renderModeSwitch();
+      renderFieldReport();
+      renderStatusTabs();
+      renderFilters();
+      renderMetricCards();
+      renderDataSecurity();
+      renderDataQuality();
+      renderFunnel();
+      renderActivation();
+      renderSegments();
+      renderCrossAnalysis();
+      renderEventData();
+      renderDailyMetrics();
+      renderSurveyFeedback();
+      renderIssues();
+      renderSuggestions();
+      renderPreview();
+      updateModuleVisibility();
+      setupNavObserver();
+    }
+
+    function setupNav() {
+      document.querySelectorAll('#sidebarNav a').forEach((link) => {
+        link.addEventListener('click', (event) => {
+          event.preventDefault();
+          if (!moduleApplicability().has(link.dataset.target)) {
+            showModeHint(link.dataset.target);
+            return;
+          }
+          const target = $(link.dataset.target);
+          if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setActiveNav(link.dataset.target);
+        });
+      });
+    }
+
+    let navObserver = null;
+    function setupNavObserver() {
+      const main = $('mainContent');
+      const sections = Array.from(document.querySelectorAll('.module[id]')).filter((section) => !section.classList.contains('hidden'));
+      if (navObserver) navObserver.disconnect();
+      if (!('IntersectionObserver' in window)) return;
+      navObserver = new IntersectionObserver((entries) => {
+        const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible) setActiveNav(visible.target.id);
+      }, { root: main, threshold: [0.18, 0.35, 0.6], rootMargin: '-10% 0px -65% 0px' });
+      sections.forEach((section) => navObserver.observe(section));
+    }
+
+    function setActiveNav(id) {
+      document.querySelectorAll('#sidebarNav a').forEach((link) => {
+        link.classList.toggle('nav-item-active', link.dataset.target === id);
+      });
+    }
+
+    function setupFileUpload() {
+      $('fileInput').addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        try {
+          const lower = file.name.toLowerCase();
+          let rows = [];
+          if (lower.endsWith('.xlsx') || lower.endsWith('.xls')) {
+            if (!window.XLSX) {
+              $('dataStatus').textContent = 'XLSX 解析库未加载，请将 Excel 另存为 CSV 后上传。';
+              return;
+            }
+            const buffer = await file.arrayBuffer();
+            const workbook = XLSX.read(buffer, { type: 'array' });
+            const firstSheet = workbook.SheetNames[0];
+            rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { defval: '' });
+          } else {
+            const text = await file.text();
+            rows = parseDelimited(text);
+          }
+          const mode = detectMode(getHeaders(rows));
+          const label = `上传${modeName(mode)}`;
+          applyUploadedRows(rows, label);
+        } catch (error) {
+          $('dataStatus').textContent = `上传失败：${error.message || '文件读取异常，请检查格式。'}`;
+        }
+      });
+      $('resetData').addEventListener('click', resetToSample);
+      $('resetFilters').addEventListener('click', () => {
+        state.filters = Object.fromEntries(pathFilterFields.map((field) => [field, '']));
+        state.activeTab = 'all';
+        renderAll();
+      });
+      $('togglePreviewFields').addEventListener('click', () => {
+        state.previewAllFields = !state.previewAllFields;
+        renderPreview();
+      });
+    }
+
+    setupNav();
+    setupFileUpload();
+    resetToSample();
+  </script>
+</body>
+</html>

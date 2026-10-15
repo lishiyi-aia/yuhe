@@ -1,0 +1,8 @@
+web/node_modules/
+web/dist/
+web/.vite-cache/
+**/*.tsbuildinfo
+.DS_Store
+qa/
+.publication-state.json
+github-publish.mjs

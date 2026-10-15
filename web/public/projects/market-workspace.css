@@ -1,0 +1,73 @@
+.interactive-case [hidden] { display: none !important; }
+.interactive-case button, .interactive-case a { touch-action: manipulation; }
+.interactive-case .workspace { margin-inline: auto; }
+.interactive-case .workflow-panel .campaign-briefs { grid-template-columns: minmax(0, 1fr); gap: 0; }
+.campaign-tabs { margin-bottom: 24px; }
+.campaign-tabs button { min-height: 46px; flex: 1; }
+.workflow-panel .field-evidence { margin-top: 24px; gap: 24px; }
+.workflow-panel .event-visual img { height: 260px; }
+.workflow-panel .event-evidence figcaption { grid-template-columns: 26px minmax(0, 1fr); gap: 10px; }
+.workflow-panel .event-evidence figcaption strong { font-size: 14px; }
+.workflow-panel .event-evidence figcaption span { font-size: 12px; }
+.workflow-panel .work-route { margin-block: 20px; }
+.workflow-panel .work-route h3 { font-size: 15px; }
+.workflow-panel .work-route p { font-size: 12px; }
+.workflow-panel .work-route .route-number { font-size: 25px; }
+.workflow-panel .field-evidence .photo-link { display: block; max-width: 550px; }
+.workflow-panel .field-evidence img { object-fit: contain; }
+.workflow-panel .evidence-context h3 { font-size: 18px; }
+.workflow-panel .evidence-context p, .workflow-panel .evidence-context dd { font-size: 12px; }
+.workflow-panel .production-drawer > .workflow-heading { padding-top: 12px; }
+.workflow-panel .production-drawer .workflow { margin-top: 25px; }
+.workflow-panel .production-drawer .material-note { padding-bottom: 20px; }
+.project-partnership .confidential-label { font-size: 12px; }
+.project-partnership .confidential-label small { font-size: 9px; }
+.project-partnership .project-subtitle { font-weight: 600; }
+.project-partnership .explorer-detail > a { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; color: var(--cyan); margin-top: 20px; font-size: 13px; text-decoration: none; }
+.project-partnership .work-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.project-partnership .work-item { padding-top: 14px; border-top-width: 2px; }
+.project-partnership .work-number { font-size: 24px; margin-bottom: 12px; }
+.project-partnership .work-item h3 { font-size: 17px; }
+.project-partnership .map-note { margin-top: 24px; }
+.project-partnership .evidence-notice { background: #fbf4df; color: #70521d; padding: 14px 16px; margin-bottom: 24px; }
+.project-partnership .evidence-notice strong { font-size: 12px; }
+.project-partnership .evidence-notice p { font-size: 11px; }
+.project-partnership .evidence-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 25px; }
+.project-partnership .evidence, .project-partnership .evidence:nth-child(-n+2) { grid-column: auto; }
+.project-partnership .evidence-frame, .project-partnership .evidence:nth-child(-n+2) .evidence-frame { aspect-ratio: 4 / 3; }
+.project-partnership .evidence figcaption strong { font-size: 14px; }
+.project-partnership .evidence-heading { flex-wrap: wrap; gap: 5px; }
+.project-partnership .evidence-heading span { font-size: 10px; }
+.project-partnership .evidence figcaption { margin-top: 10px; padding-top: 10px; }
+.project-partnership .outcome-grid { border-block: 1px solid var(--line); }
+.project-partnership .outcome { padding: 24px 20px; }
+.project-partnership .outcome + .outcome { border-color: var(--line); }
+.project-partnership .outcome span, .project-partnership .contribution strong { color: var(--cyan); }
+.project-partnership .outcome h3 { margin-top: 15px; font-size: 18px; }
+.project-partnership .outcome p, .project-partnership .signing-evidence figcaption p, .project-partnership .contribution p { color: var(--muted); font-size: 12px; }
+.project-partnership .signing-evidence { width: min(680px, 100%); }
+.project-partnership .signing-evidence .evidence-frame { aspect-ratio: 1188 / 573; }
+.project-partnership .records { gap: 20px; }
+.project-partnership .record { border-top-width: 2px; }
+.interactive-case .workflow-tabs button:focus-visible, .interactive-case [role="tab"]:focus-visible { outline: 2px solid var(--cyan); outline-offset: -3px; }
+@media (max-width: 900px) {
+  .project-partnership .confidential-inner { grid-template-columns: 1fr; gap: 8px; }
+  .project-partnership .topbar { flex-wrap: wrap; gap: 0 15px; }
+  .project-partnership .topnav { flex: 1; justify-content: flex-end; }
+}
+@media (max-width: 600px) {
+  .workflow-panel .field-evidence { grid-template-columns: minmax(0, 1fr); }
+  .workflow-panel .event-visual img { height: 230px; }
+  .campaign-tabs button { padding-inline: 6px; font-size: 12px; }
+  .project-partnership .evidence-grid { grid-template-columns: minmax(0, 1fr); }
+  .project-partnership .evidence-frame { max-height: 260px; }
+  .project-partnership .outcome-grid { grid-template-columns: minmax(0, 1fr); }
+  .project-partnership .outcome { padding: 18px 0; }
+  .project-partnership .outcome + .outcome { border-left: 0; border-top: 1px solid var(--line); }
+  .project-partnership .contribution { display: block; }
+  .project-partnership .records { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .project-partnership .work-grid { grid-template-columns: minmax(0, 1fr); }
+  .project-partnership .topnav { gap: 14px; }
+  .project-partnership .evidence-notice { display: block; }
+  .project-partnership .evidence-notice p { margin-top: 5px; }
+}
